@@ -4,15 +4,18 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.DateFormat;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Hashtable;
+import java.util.Locale;
 
 public class BaseStationLogger {
 	private static Date startTime = new Date();
 	private static LinkedList<Packet> packets = new LinkedList<Packet>(); 
 	private static Hashtable<Short,Node> nodes = new Hashtable<Short,Node>(); 
+	private static DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.ITALY);
 	
 	public static void newPacket(Packet p){
 		packets.add(p);
@@ -78,7 +81,8 @@ public class BaseStationLogger {
 	
 	public static void log(String text){
 		try {
-			FileOutputStream out = new FileOutputStream(startTime.toLocaleString().replace('/','-').trim(), true);
+			String name = df.format(startTime).replace('/','-').replace(' ','_').trim()+".log";
+			FileOutputStream out = new FileOutputStream(name, true);
 			PrintStream p = new PrintStream(out);
 			p.println(text);
 			out.flush();

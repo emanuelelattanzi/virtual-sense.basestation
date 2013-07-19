@@ -20,7 +20,7 @@ public class TextParser {
 	static short temperature;
     static short luminosity;*/
 	public static void parseText(String text){
-		System.out.println("parsing: "+text);
+		//System.out.println("parsing: "+text);
 		if(text.indexOf("<packet>") != -1){
 			intPacket = true;
 			return;
@@ -36,7 +36,7 @@ public class TextParser {
 		if(intPacket && (text.indexOf(">") != -1)){
 			StringTokenizer tokenizer = new StringTokenizer(text, ": ");
 			String tag = tokenizer.nextToken();				
-			System.out.println("working on "+tag);
+			//System.out.println("working on "+tag);
 			if(tag.equals(">time")){				
 				time = System.currentTimeMillis();
 			}
