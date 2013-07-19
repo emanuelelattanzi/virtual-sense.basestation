@@ -33,7 +33,7 @@ public class Packet {
 		 if(this.route != 0){
 			 list = new LinkedList<Short>();
 			 for(short i = 1; i < 16; i++){
-				 System.out.println("comparing "+(0x01 << i)+" and "+this.route);
+				 //System.out.println("comparing "+(0x01 << i)+" and "+this.route);
 				if(((0x01 << i) == this.route)){
 					
 					list.add(new Short(i));
