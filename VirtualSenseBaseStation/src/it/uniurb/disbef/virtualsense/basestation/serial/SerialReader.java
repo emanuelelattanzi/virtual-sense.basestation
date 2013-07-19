@@ -1,6 +1,8 @@
 package it.uniurb.disbef.virtualsense.basestation.serial;
 
+import it.uniurb.disbef.virtualsense.basestation.BaseStationLogger;
 import it.uniurb.disbef.virtualsense.basestation.gui.DebugArea;
+import it.uniurb.disbef.virtualsense.basestation.textparser.TextParser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,6 +27,8 @@ public class SerialReader extends Thread {
 		try {
 			while(running){
 				readed = reader.readLine();
+				TextParser.parseText(readed);
+				BaseStationLogger.log(readed);
 				debug.println("S< "+readed);
 			}
 			debug.println("DEBUG: SerialReader shut down ");

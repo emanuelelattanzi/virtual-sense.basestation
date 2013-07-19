@@ -4,8 +4,11 @@ import gnu.io.NoSuchPortException;
 import gnu.io.PortInUseException;
 import gnu.io.UnsupportedCommOperationException;
 
+import it.uniurb.disbef.virtualsense.basestation.BaseStationLogger;
 import it.uniurb.disbef.virtualsense.basestation.serial.SerialCommunication;
 import it.uniurb.disbef.virtualsense.basestation.serial.SerialReader;
+import it.uniurb.disbef.virtualsense.basestation.serial.SerialWriter;
+import it.uniurb.disbef.virtualsense.basestation.textparser.TextParser;
 
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
@@ -13,6 +16,7 @@ import java.awt.EventQueue;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
@@ -34,6 +38,9 @@ import sun.security.ssl.Debug;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -47,6 +54,7 @@ public class GUI extends JFrame {
 	private String baudRate;
 	private DebugArea debugArea;
 	private SerialReader serialReader;
+	private SerialWriter serialWriter;
 
 	/**
 	 * Launch the application.
@@ -106,6 +114,16 @@ public class GUI extends JFrame {
 		
 		});
 		fileMenu.add(configMItem);
+		
+		JMenuItem loadTraceMenuItem = new JMenuItem("load trace");
+		loadTraceMenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				loadAction();
+				}
+
+			
+		});
+		fileMenu.add(loadTraceMenuItem);
 		fileMenu.add(exitMenuItem);
 		
 		JMenu networkMenu = new JMenu("Network");
@@ -118,6 +136,14 @@ public class GUI extends JFrame {
 			}
 		});
 		networkMenu.add(ommandsMenuItem);
+		
+		JMenuItem printNodesInfoMenuItem = new JMenuItem("print nodes info");
+		printNodesInfoMenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				printNodesInfoAction();
+			}
+		});
+		networkMenu.add(printNodesInfoMenuItem);
 		mainPane = new JPanel();
 		mainPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(mainPane);
@@ -135,6 +161,12 @@ public class GUI extends JFrame {
 		debugScrollPane.setViewportView(debugArea);
 	}
 	
+	protected void printNodesInfoAction() {
+		// TODO Auto-generated method stub
+		BaseStationLogger.printNodesInfo();
+		
+	}
+
 	private void configAction() {
 		// TODO Auto-generated method stub
 		String[] buttons = { "OK", "Cancel"};
@@ -155,6 +187,8 @@ public class GUI extends JFrame {
 			this.baudRate = this.configPanel.getBaudRate();	
 			if(this.serialReader != null)
 				this.serialReader.stopReading();
+			if(this.serialWriter != null)
+				this.serialWriter.stopWriter();
 			if (SerialCommunication.in != null)				
 					SerialCommunication.resetPort();				
 			
@@ -164,12 +198,16 @@ public class GUI extends JFrame {
 	private void connectAction() {
 		if(this.serialReader != null)
 			this.serialReader.stopReading();
+		if(this.serialWriter != null)
+			this.serialWriter.stopWriter();
 		SerialCommunication.resetPort();
 		try {
 			SerialCommunication.createCommunication(this.commPort, baudRate, this.debugArea);
 			if(SerialCommunication.in != null){				
 				this.serialReader = new SerialReader(SerialCommunication.in, this.debugArea);
 				this.serialReader.start();
+				this.serialWriter = new SerialWriter(SerialCommunication.out, this.debugArea);
+				this.serialWriter.start();
 			}
 			
 		} catch (NoSuchPortException e) {
@@ -193,6 +231,35 @@ public class GUI extends JFrame {
 	}
 	private void commandsAction() {
 		// TODO Auto-generated method stub
+		if(this.serialWriter != null)
+			this.serialWriter.writeCommand("APPS LOAD 1");
+		
+	}
+	
+	private void loadAction() {
+		 JFileChooser chooser = new JFileChooser();
+		 int returnVal = chooser.showOpenDialog(this);
+		 String fileName = "";
+		 if(returnVal == JFileChooser.APPROVE_OPTION) {
+		       fileName = chooser.getSelectedFile().getAbsolutePath();
+		 }
+		 try {
+			BufferedReader in
+			   = new BufferedReader(new FileReader(fileName));
+			String tmp = null;
+			do{
+				 tmp = in.readLine();
+				 if(tmp != null)
+					 TextParser.parseText(tmp);
+			}while(tmp != null);
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 }
