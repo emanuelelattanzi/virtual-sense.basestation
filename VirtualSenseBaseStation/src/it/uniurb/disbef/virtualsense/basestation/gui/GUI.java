@@ -143,6 +143,14 @@ public class GUI extends JFrame {
 				printNodesInfoAction();
 			}
 		});
+		
+		JMenuItem loadNodesFileMenuItem = new JMenuItem("Load nodes file");
+		loadNodesFileMenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				loadNodesFileAction();
+			}
+		});
+		networkMenu.add(loadNodesFileMenuItem);
 		networkMenu.add(printNodesInfoMenuItem);
 		mainPane = new JPanel();
 		mainPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -158,9 +166,34 @@ public class GUI extends JFrame {
 		mainPane.add(debugScrollPane, BorderLayout.SOUTH);
 		
 		
+		NodesPanel nodesPanel = new NodesPanel(BaseStationLogger.nodes);
+		nodesPanel.setPreferredSize(new Dimension(500, 700));
+		nodesPanel.setSize(new Dimension(500, 700));
+		nodesPanel.setMinimumSize(new Dimension(500, 700));
+		nodesPanel.setBounds(new Rectangle(0, 0, 500, 700));
+		mainPane.add(nodesPanel, BorderLayout.NORTH);
+		
+		
+		
+		
+		
 		debugScrollPane.setViewportView(debugArea);
+		
+		BaseStationLogger.createNodesFromFile("nodes.txt");
 	}
 	
+	protected void loadNodesFileAction() {
+		// TODO Auto-generated method stub
+		JFileChooser chooser = new JFileChooser();
+		int returnVal = chooser.showOpenDialog(this);
+		String fileName = "";
+		if(returnVal == JFileChooser.APPROVE_OPTION) {
+		      fileName = chooser.getSelectedFile().getAbsolutePath();
+		}
+		BaseStationLogger.createNodesFromFile(fileName);
+		
+	}
+
 	protected void printNodesInfoAction() {
 		// TODO Auto-generated method stub
 		BaseStationLogger.printNodesInfo();
@@ -249,6 +282,7 @@ public class GUI extends JFrame {
 			String tmp = null;
 			do{
 				 tmp = in.readLine();
+				 //Thread.sleep(100); // to debug 
 				 if(tmp != null)
 					 TextParser.parseText(tmp);
 			}while(tmp != null);
@@ -257,6 +291,9 @@ public class GUI extends JFrame {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

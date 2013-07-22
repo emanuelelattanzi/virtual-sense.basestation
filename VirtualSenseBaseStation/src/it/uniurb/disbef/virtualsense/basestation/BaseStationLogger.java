@@ -1,8 +1,11 @@
 package it.uniurb.disbef.virtualsense.basestation;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.text.DateFormat;
 import java.util.Date;
@@ -10,11 +13,11 @@ import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Hashtable;
 import java.util.Locale;
+import java.util.StringTokenizer;
 
-public class BaseStationLogger {
-	private static Date startTime = new Date();
+public class BaseStationLogger {	
 	private static LinkedList<Packet> packets = new LinkedList<Packet>(); 
-	private static Hashtable<Short,Node> nodes = new Hashtable<Short,Node>(); 
+	public static Hashtable<Short,Node> nodes = new Hashtable<Short,Node>(); 
 	private static DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.ITALY);
 	
 	public static void newPacket(Packet p){
@@ -81,9 +84,12 @@ public class BaseStationLogger {
 	
 	public static void log(String text){
 		try {
+			Date startTime = new Date();
 			String name = df.format(startTime).replace('/','-').replace(' ','_').trim()+".log";
 			FileOutputStream out = new FileOutputStream(name, true);
 			PrintStream p = new PrintStream(out);
+			if(text.indexOf("<packet>") != -1)
+				text = text+" "+System.currentTimeMillis(); // to add  timestamp to the received packet 
 			p.println(text);
 			out.flush();
 			out.close();
@@ -95,4 +101,53 @@ public class BaseStationLogger {
 			e.printStackTrace();
 		}
 	}
+	  public static void createNodesFromFile(String file){
+	        BufferedReader bReader = null;
+	        double maxLat = 1270;
+	        double minLat = 1270;//90;
+	        double maxLongi = 1270;
+	        double minLongi = 1270;//90;
+	        
+	        try {
+	            bReader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+	            
+	            String temp = bReader.readLine();
+	            
+	            while (temp != null) {
+	                StringTokenizer tok = new StringTokenizer(temp, ";");
+	                short nodeId = Short.parseShort(tok.nextToken());
+	                int lati = Integer.parseInt(tok.nextToken());
+	                int longi = Integer.parseInt(tok.nextToken());
+	                
+	               
+	               if(lati < minLat)
+	                    minLat = lati;                    
+	                                 
+	                if(longi < minLongi)
+	                    minLongi = longi;                    
+	                                 
+	                
+	                Node n = new Node(nodeId, lati, longi);
+	                nodes.put(nodeId, n);	          
+	                //System.out.println("Creato nodo con "+n.getStringID()+" "+n.getShortID());
+	                temp = bReader.readLine();
+	            }//end while
+	            /*this.view.nodesPanel.maxLati = maxLat;
+	            this.view.nodesPanel.minLati = minLat;
+	            this.view.nodesPanel.maxLongi = maxLongi;
+	            this.view.nodesPanel.minLongi = minLongi;
+	            this.view.nodesPanel.updateNodes(nodes);*/
+	            
+	        } catch (Exception ex) {
+	            System.out.println("Errore1:" +ex);
+	        } finally {
+	            //this.view.nodesPanel.updateNodes(nodes);
+	            try {
+	                bReader.close();
+	            } catch (IOException ex) {
+	                System.out.println("Errore2:" +ex);
+	            }
+	        }
+	     }
+
 }

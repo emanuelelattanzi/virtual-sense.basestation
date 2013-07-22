@@ -3,16 +3,16 @@ package it.uniurb.disbef.virtualsense.basestation;
 import java.util.LinkedList;
 
 public class Packet {
-	 long time;
-	 short lastRouter;
-	 short sender;
-	 short counter;
-	 short route;
-	 short noise;
-	 short co2;
-	 /*short pressure;
-	 short temperature;
-	 short luminosity;*/
+	 public long time;
+	 public short lastRouter;
+	 public short sender;
+	 public short counter;
+	 public short route;
+	 public short noise;
+	 public short co2;
+	 /*public short pressure;
+	 public short temperature;
+	 public short luminosity;*/
 	 
 	 public Packet(long t, short lR, short s, short c, short r, short n, short co2/*, short p, short temp, short lum*/){
 		 this.time = t;
