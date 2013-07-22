@@ -1,6 +1,7 @@
 package it.uniurb.disbef.virtualsense.basestation.gui;
 
 
+import it.uniurb.disbef.virtualsense.basestation.Node;
 import it.uniurb.disbef.virtualsense.basestation.Packet;
 
 import java.awt.Graphics;
@@ -25,22 +26,22 @@ import org.jfree.ui.RefineryUtilities;
 public class TimeSerieGraph {
  
     
-	public void createTimeSeriesXYChart(LinkedList<Packet> packets, String value, JPanel panel)
+	public void createTimeSeriesXYChart(Node nn, String value, JPanel panel)
     {
  
         TimeSeries series = new TimeSeries( "", Second.class );
-        System.out.println("Creating graph for "+packets.size()+" packets ");
+        System.out.println("Creating graph for "+nn.myPackets.size()+" packets ");
  
        
-        Iterator<Packet> it = packets.iterator();
+        Iterator<Packet> it = nn.myPackets.iterator();
         
         while(it.hasNext()){
         	Packet p  = it.next();
-        	if(value.equals("counter"))
+        	if(value.equals("Counter"))
         		series.addOrUpdate(new Second(new Date(p.time)), p.counter);
-        	if(value.equals("co2"))
+        	if(value.equals("CO2"))
         		series.addOrUpdate(new Second(new Date(p.time)), p.co2);
-        	if(value.equals("noise"))
+        	if(value.equals("Noise"))
         		series.addOrUpdate(new Second(new Date(p.time)), p.noise);
         	//System.out.println(" time: "+p.time+" counter: "+p.counter);
         }
@@ -49,9 +50,9 @@ public class TimeSerieGraph {
         dataset.addSeries(series);
  
         JFreeChart chart = ChartFactory.createTimeSeriesChart
-        ("Counter of the node ..",    // Title
-         "Seconds",                     // X-Axis label
-         "Counter value",             // Y-Axis label
+        (value+": of the node "+nn.ID,    // Title
+         "Time",                     // X-Axis label
+         value+" value",             // Y-Axis label
          dataset,               // Dataset
          true,                      // Show legend
          true,              //tooltips

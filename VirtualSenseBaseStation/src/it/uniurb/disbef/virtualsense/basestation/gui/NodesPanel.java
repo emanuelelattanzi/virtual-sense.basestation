@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.*;
 
 import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
 
 /**
  * 
@@ -288,10 +289,25 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
 		// TODO Auto-generated method stub
 		int x = e.getX();
 		int y = e.getY();
+		Node nn  = findNodeByPosition(new Point(x,y));
 		System.out.println("Clicked to "+x+" "+y);
-		System.out.println("Selected node is "+findNodeByPosition(new Point(x,y)).ID);
+		System.out.println("Selected node is "+nn.ID);
+		
+		// choose what to plot
+		Object[] possibilities = {"Counter", "Noise", "CO2"};		
+		String s = (String)JOptionPane.showInputDialog(
+		                    this,
+		                    "Select the potting value",
+		                    "Plotting selection Dialog",
+		                    JOptionPane.PLAIN_MESSAGE,
+		                    null,
+		                    possibilities,
+		                    "Counter");
+		
+	if ((s != null) && (s.length() > 0)) {
 		TimeSerieGraph timeSerie = new TimeSerieGraph();
-		timeSerie.createTimeSeriesXYChart(findNodeByPosition(new Point(x,y)).myPackets, "co2", this);
+		timeSerie.createTimeSeriesXYChart(nn, s, this);
+	}
 		
 		
 	}
