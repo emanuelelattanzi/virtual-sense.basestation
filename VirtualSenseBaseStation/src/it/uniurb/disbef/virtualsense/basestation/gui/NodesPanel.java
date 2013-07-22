@@ -291,7 +291,7 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
 		System.out.println("Clicked to "+x+" "+y);
 		System.out.println("Selected node is "+findNodeByPosition(new Point(x,y)).ID);
 		TimeSerieGraph timeSerie = new TimeSerieGraph();
-		timeSerie.createTimeSeriesXYChart(findNodeByPosition(new Point(x,y)).myPackets, "value", this);
+		timeSerie.createTimeSeriesXYChart(findNodeByPosition(new Point(x,y)).myPackets, "co2", this);
 		
 		
 	}

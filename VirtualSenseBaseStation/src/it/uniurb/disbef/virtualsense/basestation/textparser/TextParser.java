@@ -9,6 +9,7 @@ import it.uniurb.disbef.virtualsense.basestation.Packet;
 
 public class TextParser {
 	static boolean intPacket = false;
+	static boolean savedTrace  = false;
 	static long time;
 	static short lastRouter;
 	static short sender;
@@ -23,6 +24,14 @@ public class TextParser {
 		//System.out.println("parsing: "+text);
 		if(text.indexOf("<packet>") != -1){
 			intPacket = true;
+			StringTokenizer tokenizer = new StringTokenizer(text, " ");
+			if(tokenizer.countTokens() > 1){
+				tokenizer.nextToken();
+				time = Long.parseLong(tokenizer.nextToken()); // we are loading a saved trace so we need to take the saved timestamp
+				savedTrace = true;
+			}else {
+				savedTrace = false;
+			}
 			return;
 		}
 		if(text.indexOf("</packet>") != -1){
@@ -37,7 +46,7 @@ public class TextParser {
 			StringTokenizer tokenizer = new StringTokenizer(text, ": ");
 			String tag = tokenizer.nextToken();				
 			//System.out.println("working on "+tag);
-			if(tag.equals(">time")){				
+			if(tag.equals(">time") && !savedTrace){				
 				time = System.currentTimeMillis();
 			}
 			if(tag.equals(">router")){	

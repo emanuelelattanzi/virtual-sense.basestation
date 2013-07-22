@@ -36,8 +36,13 @@ public class TimeSerieGraph {
         
         while(it.hasNext()){
         	Packet p  = it.next();
-        	series.addOrUpdate(new Second(new Date(p.time)), p.counter);
-        	System.out.println(" time: "+p.time+" counter: "+p.counter);
+        	if(value.equals("counter"))
+        		series.addOrUpdate(new Second(new Date(p.time)), p.counter);
+        	if(value.equals("co2"))
+        		series.addOrUpdate(new Second(new Date(p.time)), p.co2);
+        	if(value.equals("noise"))
+        		series.addOrUpdate(new Second(new Date(p.time)), p.noise);
+        	//System.out.println(" time: "+p.time+" counter: "+p.counter);
         }
         
         TimeSeriesCollection dataset=new TimeSeriesCollection();
@@ -54,8 +59,8 @@ public class TimeSerieGraph {
         );
  
        // saveChart(chart);
-        BufferedImage bImg = chart.createBufferedImage(600, 600);
-        panel.getGraphics().drawImage(bImg, 800,10, 600,600, panel);
+        BufferedImage bImg = chart.createBufferedImage(550, 700);
+        panel.getGraphics().drawImage(bImg, 750,0, 550,700, panel);
      
  
     }
