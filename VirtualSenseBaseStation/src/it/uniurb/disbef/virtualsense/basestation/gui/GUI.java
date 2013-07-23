@@ -45,6 +45,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.awt.Cursor;
+import javax.swing.JSeparator;
+import javax.swing.JCheckBoxMenuItem;
 
 public class GUI extends JFrame {
 
@@ -55,6 +57,8 @@ public class GUI extends JFrame {
 	private DebugArea debugArea;
 	private SerialReader serialReader;
 	private SerialWriter serialWriter;
+	public  JCheckBoxMenuItem showsNodeInfoCheckBoxMenuItem;
+	public NodesPanel nodesPanel;
 
 	/**
 	 * Launch the application.
@@ -151,6 +155,13 @@ public class GUI extends JFrame {
 			}
 		});
 		networkMenu.add(loadNodesFileMenuItem);
+		
+		JSeparator separator = new JSeparator();
+		networkMenu.add(separator);
+		
+		this.showsNodeInfoCheckBoxMenuItem = new JCheckBoxMenuItem("shows node info");
+		showsNodeInfoCheckBoxMenuItem.setSelected(true);
+		networkMenu.add(showsNodeInfoCheckBoxMenuItem);
 		networkMenu.add(printNodesInfoMenuItem);
 		mainPane = new JPanel();
 		mainPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -166,7 +177,7 @@ public class GUI extends JFrame {
 		mainPane.add(debugScrollPane, BorderLayout.SOUTH);
 		
 		
-		NodesPanel nodesPanel = new NodesPanel(BaseStationLogger.nodes);
+		this.nodesPanel = new NodesPanel(BaseStationLogger.nodes, this);
 		nodesPanel.setPreferredSize(new Dimension(500, 700));
 		nodesPanel.setSize(new Dimension(500, 700));
 		nodesPanel.setMinimumSize(new Dimension(500, 700));
@@ -237,7 +248,7 @@ public class GUI extends JFrame {
 		try {
 			SerialCommunication.createCommunication(this.commPort, baudRate, this.debugArea);
 			if(SerialCommunication.in != null){				
-				this.serialReader = new SerialReader(SerialCommunication.in, this.debugArea);
+				this.serialReader = new SerialReader(SerialCommunication.in, this.debugArea, this);
 				this.serialReader.start();
 				this.serialWriter = new SerialWriter(SerialCommunication.out, this.debugArea);
 				this.serialWriter.start();
@@ -270,21 +281,29 @@ public class GUI extends JFrame {
 	}
 	
 	private void loadAction() {
+		
 		 JFileChooser chooser = new JFileChooser();
 		 int returnVal = chooser.showOpenDialog(this);
 		 String fileName = "";
 		 if(returnVal == JFileChooser.APPROVE_OPTION) {
-		       fileName = chooser.getSelectedFile().getAbsolutePath();
+		        fileName = chooser.getSelectedFile().getAbsolutePath();
 		 }
+		 final GUI myGui = this;
+		 final String name = fileName;
+		 new Thread(){
+			 public void run(){
+				 int lineNumber = 0;
+	
+		 String tmp = null;
 		 try {
 			BufferedReader in
-			   = new BufferedReader(new FileReader(fileName));
-			String tmp = null;
+			   = new BufferedReader(new FileReader(name));			
 			do{
 				 tmp = in.readLine();
-				 //Thread.sleep(100); // to debug 
+				 //Thread.sleep(50); // to debug 
 				 if(tmp != null)
-					 TextParser.parseText(tmp);
+					 TextParser.parseText(tmp, myGui);
+				 lineNumber++;
 			}while(tmp != null);
 			
 		} catch (FileNotFoundException e) {
@@ -293,7 +312,13 @@ public class GUI extends JFrame {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.println("For input string: "+tmp+" at line number: "+lineNumber);
 		}
+			 }
+		 }.start();
 		
 	}
 }

@@ -2,6 +2,7 @@ package it.uniurb.disbef.virtualsense.basestation.serial;
 
 import it.uniurb.disbef.virtualsense.basestation.BaseStationLogger;
 import it.uniurb.disbef.virtualsense.basestation.gui.DebugArea;
+import it.uniurb.disbef.virtualsense.basestation.gui.GUI;
 import it.uniurb.disbef.virtualsense.basestation.textparser.TextParser;
 
 import java.io.BufferedReader;
@@ -12,12 +13,14 @@ import java.io.InputStreamReader;
 public class SerialReader extends Thread {
 	private InputStream in;
 	private DebugArea debug;
+	private GUI gui;
 	private boolean running = true;
 	
-	public SerialReader(InputStream in, DebugArea debug){
+	public SerialReader(InputStream in, DebugArea debug, GUI gui){
 		super("SerialReader");
 		this.in = in;
 		this.debug = debug;
+		this.gui = gui;
 	}
 	
 	public void run (){
@@ -27,7 +30,7 @@ public class SerialReader extends Thread {
 		try {
 			while(running){
 				readed = reader.readLine();
-				TextParser.parseText(readed);
+				TextParser.parseText(readed, gui);
 				BaseStationLogger.log(readed);
 				debug.println("S< "+readed);
 			}
@@ -35,6 +38,10 @@ public class SerialReader extends Thread {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			debug.println(""+e);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.println("For input string: "+readed);
 		}
 		
 	}

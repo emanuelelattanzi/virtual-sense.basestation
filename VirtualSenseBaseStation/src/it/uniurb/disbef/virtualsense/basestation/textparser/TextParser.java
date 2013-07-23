@@ -6,6 +6,7 @@ import com.sun.istack.internal.logging.Logger;
 
 import it.uniurb.disbef.virtualsense.basestation.BaseStationLogger;
 import it.uniurb.disbef.virtualsense.basestation.Packet;
+import it.uniurb.disbef.virtualsense.basestation.gui.GUI;
 
 public class TextParser {
 	static boolean intPacket = false;
@@ -20,7 +21,7 @@ public class TextParser {
 	/*static short pressure;
 	static short temperature;
     static short luminosity;*/
-	public static void parseText(String text){
+	public static void parseText(String text, GUI gui) throws Exception{
 		//System.out.println("parsing: "+text);
 		if(text.indexOf("<packet>") != -1){
 			intPacket = true;
@@ -39,6 +40,7 @@ public class TextParser {
 			// finalize the packet
 			Packet p = new Packet(time,lastRouter,sender,counter,route,noise,co2 /*,pressure,temperature,luminosity*/);
 			BaseStationLogger.newPacket(p);
+			gui.nodesPanel.updatePacket(p);
 			return;
 		}
 		

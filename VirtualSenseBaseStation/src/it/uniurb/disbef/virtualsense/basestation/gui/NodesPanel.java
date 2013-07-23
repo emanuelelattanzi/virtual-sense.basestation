@@ -3,10 +3,12 @@ package it.uniurb.disbef.virtualsense.basestation.gui;
 
 
 import it.uniurb.disbef.virtualsense.basestation.Node;
+import it.uniurb.disbef.virtualsense.basestation.Packet;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +21,7 @@ import javax.swing.JOptionPane;
  * 
  * @author  lattanzi
  */
-public class NodesPanel extends javax.swing.JPanel implements MouseListener {
+public class NodesPanel extends javax.swing.JPanel implements MouseListener , MouseMotionListener{
     private Hashtable<Short, Node> tableNodes;
     //private DataMsg actualMessage;
     private Node[] nodes;
@@ -37,10 +39,17 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
     private boolean plottingFlow = false;
     private boolean routed = false;    
     private BufferedImage image;
+    private BufferedImage actualGraph;
+    private GUI gui;
+    private short nodeToShowInfo = -1;
+    private Packet lastPacket = null;
+    private int sinkX = 245;
+    private short sinkY = 545;
 
     /** Creates new form NewJPanel */
-    public NodesPanel(Hashtable<Short, Node> nodes) {
+    public NodesPanel(Hashtable<Short, Node> nodes, GUI gui) {
     	this.tableNodes = nodes;
+    	this.gui = gui;
         initComponents();
     }
     
@@ -68,6 +77,7 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
             .addGap(0, 300, Short.MAX_VALUE)
         );
         addMouseListener(this);
+        addMouseMotionListener(this);
     }// </editor-fold>//GEN-END:initComponents
     
     
@@ -83,10 +93,16 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
                 //if(this.plottingFlow)
                 //    this.drawFlow(g);
                 this.drawNodes(g);
-                //this.drawLinks(g);
+                this.drawLinks(g);
+                this.drawGraph(g);
                 
                 
         
+    }
+    
+    private void drawGraph(Graphics g){
+    	if(actualGraph != null)
+    		g.drawImage(actualGraph, 750,0, 550,700, this);
     }
     
     private void drawNodes(Graphics g){
@@ -104,10 +120,20 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
                 g.setColor(new Color(135,206,250,100));                            
                 //String address = nn.getShortStringID();
                 String address = ""+nn.ID;
-                g.fillOval(nn.xLocation, nn.yLocation, 30, 30);
-                g.setColor(Color.darkGray);
-                /*if(SentillaBaseStationView.nodeIdCheckBox.getState())
-                    g.drawString("ID: "+address, nn.xLocation+40, nn.yLocation+50); */
+                // draw circle around nodes
+                if(nn.ID != 0){
+                	g.fillOval(nn.xLocation, nn.yLocation, 30, 30);                	
+                }
+                if(this.gui.showsNodeInfoCheckBoxMenuItem.isSelected() && nn.ID == this.nodeToShowInfo) {
+                	g.setColor(new Color(135,135,250,255)); 
+                	g.fillRect(nn.xLocation+20, nn.yLocation+20, 80, 50);
+                	g.setColor(Color.black);
+                	g.drawRect(nn.xLocation+20, nn.yLocation+20, 80, 50);
+                    g.drawString("sent: "+nn.myPackets.size(), nn.xLocation+25, nn.yLocation+35);
+                    g.drawString("routed: "+nn.routedPacket, nn.xLocation+25, nn.yLocation+50);                    
+                    
+                }
+                g.setColor(new Color(135,206,250,100)); 
                 
                 /*if(SentillaBaseStationView.packetSentCheckBox.getState())
                      g.drawString(nn.arrived+"/"+nn.sent, nn.x+40, nn.y+90);
@@ -119,41 +145,67 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
                      g.drawString("V: "+format.format(nn.v), nn.x+40, nn.y+120);*/
               
             }
-           
+            // draw sink
+            
+            g.fillOval(this.sinkX, this.sinkY, 30, 30);   
         }
     }
     
-    /*private void drawLinks(Graphics g){
+    private void drawLinks(Graphics g){
         //draws link (message)
-        if(this.actualMessage != null){
+        if(this.lastPacket != null){
             //g.setColor(Color.BLACK);
-            long sendingNode = this.actualMessage.srcAddress;
-            Node n = this.tableNodes.get(new Long(sendingNode));                   
+            short sendingNode = this.lastPacket.sender;
+            Node n = this.tableNodes.get(new Short(sendingNode));                   
             g.setColor(Color.RED);
-            g.fillOval(n.x+50, n.y+50, 20, 20);
+            g.fillOval(n.xLocation, n.yLocation, 20, 20);
             //System.out.println("Found node: "+index);
-            if(this.actualMessage.destAddress == 0xFFFFFFFFFFFFFFFFL){
+            /*if(this.actualMessage.destAddress == 0xFFFFFFFFFFFFFFFFL){
                 g.drawOval(n.x+40, n.y+40, 50, 50);
                 g.drawOval(n.x+30, n.y+30, 70, 70);
                 g.drawOval(n.x+20, n.y+20, 90, 90);
+            }*/
+            if(this.lastPacket.route == 0){                        // direct to the sink                    
+                    g.drawLine(n.xLocation+5, n.yLocation+5, this.sinkX+5, this.sinkY+5);
+                    g.fillOval(this.sinkX, this.sinkY, 20 , 20);
             }else {
-                if(this.actualMessage.hops == 0){                                            
-                    g.drawLine(n.x+65, n.y+65, this.sink.x+65, this.sink.y+65);
-                    g.fillOval(this.sink.x+60, this.sink.y+60, 10 , 10);
-                }else {
-                    for(int i = 0; i < this.actualMessage.hops; i++){
-                        Node nn = findNode(this.actualMessage.nodes[i]);                            
-                        g.drawLine(n.x+65, n.y+65, nn.x+65, nn.y+65);
-                        g.fillOval(nn.x+60, nn.y+60, 10 , 10);
+            		LinkedList<Short> hops = this.lastPacket.getHospIndexes();
+            		// find the closer 
+            		
+                    for(int i = 0; i < hops.size(); i++){
+                    	// find closer node
+                    	Node nn = findTheCloser(n, hops);
+                        g.drawLine(n.xLocation+5, n.yLocation+5, nn.xLocation+5, nn.yLocation+5);
+                        g.fillOval(nn.xLocation, nn.yLocation, 20 , 20);
+                        hops.remove(new Short(nn.ID));
                         n = nn;
+                        
                     }
-                    g.drawLine(n.x+65, n.y+65, this.sink.x+65, this.sink.y+65);
-                    g.fillOval(this.sink.x+60, this.sink.y+60, 10 , 10);
+                    g.drawLine(n.xLocation+5, n.yLocation+5, this.sinkX, this.sinkY);
+                    g.fillOval(this.sinkX, this.sinkY, 20 , 20);
                 }
             }
 
         }
-    } */
+    private Node findTheCloser(Node n, LinkedList<Short> hops) {
+		Node ret = findNode(hops.get(0));
+		double distance = ret.getDistance(n);
+		for(int i = 1; i < hops.size(); i++){
+			Node tmp = findNode(hops.get(i));
+			if(tmp.getDistance(n) < distance){
+				distance = tmp.getDistance(n);
+				ret = tmp;
+			}
+		}		
+		return ret;
+	}
+    
+    public void updatePacket(Packet p){
+        this.lastPacket = p;
+        this.repaint();
+        
+    } 
+	 
     
     /*private void drawFlow(Graphics g){
         if(this.flowToPlot != null){
@@ -270,7 +322,7 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
     public Node findNodeByPosition(Point p){        
         
         Node ret = null;
-        double distance = Double.MAX_VALUE;
+        double distance = 50; // ignore distance over 50 (null return)
         Enumeration e = this.tableNodes.elements();
         while(e.hasMoreElements()){
             Node nn = (Node)e.nextElement();     
@@ -278,7 +330,7 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
             if(newDistance < distance){
                 ret = nn;
                 distance = newDistance;
-                //break;
+                //System.out.println("last distance = "+distance);
             }
         }
         return ret;        
@@ -290,12 +342,13 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
 		int x = e.getX();
 		int y = e.getY();
 		Node nn  = findNodeByPosition(new Point(x,y));
-		System.out.println("Clicked to "+x+" "+y);
-		System.out.println("Selected node is "+nn.ID);
+		if(nn != null){
+			System.out.println("Clicked to "+x+" "+y);
+			System.out.println("Selected node is "+nn.ID);
 		
-		// choose what to plot
-		Object[] possibilities = {"Counter", "Noise", "CO2"};		
-		String s = (String)JOptionPane.showInputDialog(
+			// choose what to plot
+			Object[] possibilities = {"Counter", "Noise", "CO2"};		
+			String s = (String)JOptionPane.showInputDialog(
 		                    this,
 		                    "Select the potting value",
 		                    "Plotting selection Dialog",
@@ -304,11 +357,12 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
 		                    possibilities,
 		                    "Counter");
 		
-	if ((s != null) && (s.length() > 0)) {
-		TimeSerieGraph timeSerie = new TimeSerieGraph();
-		timeSerie.createTimeSeriesXYChart(nn, s, this);
-	}
-		
+			if ((s != null) && (s.length() > 0)) {
+				TimeSerieGraph timeSerie = new TimeSerieGraph();
+				actualGraph = timeSerie.createTimeSeriesXYChart(nn, s);
+				this.repaint();
+			}
+		}	
 		
 	}
 
@@ -327,12 +381,32 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener {
 	@Override
 	public void mouseEntered(MouseEvent e) {
 		// TODO Auto-generated method stub
+	
 		
 	}
 
 	@Override
 	public void mouseExited(MouseEvent e) {
 		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseDragged(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseMoved(MouseEvent e) {
+		// TODO Auto-generated method stub
+		Node nn  = findNodeByPosition(new Point(e.getX(),e.getY()));
+		if(nn != null){
+			nodeToShowInfo = nn.ID;
+		}else 
+			nodeToShowInfo = -1;
+		this.repaint();
+		
 		
 	}
     

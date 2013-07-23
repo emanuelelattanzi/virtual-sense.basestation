@@ -1,5 +1,6 @@
 package it.uniurb.disbef.virtualsense.basestation;
 
+import java.awt.Point;
 import java.util.LinkedList;
 
 public class Node {
@@ -19,6 +20,10 @@ public class Node {
 		this.ID = id;
 		this.xLocation = x;
 		this.yLocation = y;
+	}
+	
+	public double getDistance(Node n){
+		return new Point(n.xLocation, n.yLocation).distance(new Point(this.xLocation, this.yLocation));		
 	}
 
 }
