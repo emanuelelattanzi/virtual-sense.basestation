@@ -50,6 +50,8 @@ public class TimeSerieGraph {
 		double avg = 0;
 		int counter = 0;
         TimeSeries series = new TimeSeries( "", Second.class );
+        TimeSeries series2 = new TimeSeries( "", Second.class );
+        TimeSeries series3 = new TimeSeries( "", Second.class );
         System.out.println("Creating graph for "+nn.myPackets.size()+" packets ");
  
        
@@ -72,16 +74,24 @@ public class TimeSerieGraph {
         		counter++;
         		series.addOrUpdate(new Second(new Date(p.time)), p.noise);
         	}
+        	if(value.equals("People")){
+        		avg+=p.in;
+    			counter++;
+        		series.addOrUpdate(new Second(new Date(p.time)), p.in);
+        		series2.addOrUpdate(new Second(new Date(p.time)), p.out);
+        		series3.addOrUpdate(new Second(new Date(p.time)), p.in - p.out);
+        	}
         	//System.out.println(" time: "+p.time+" counter: "+p.counter);
-        }
+        }       
         
-        
-        System.out.println("AVG is: "+avg);
         avg = avg/counter;
-        System.out.println("AVG is: "+avg);
         
         TimeSeriesCollection dataset=new TimeSeriesCollection();
         dataset.addSeries(series);
+        if(value.equals("People")){
+        	dataset.addSeries(series2);
+        	dataset.addSeries(series3);
+        }
  
         JFreeChart chart = ChartFactory.createTimeSeriesChart
         (value+": node "+nn.ID,    // Title
@@ -130,12 +140,14 @@ public class TimeSerieGraph {
         final IntervalMarker target = new IntervalMarker(avg-deviation, avg+deviation);
         DecimalFormat df2 = new DecimalFormat( "#,###,###,##0.00" );
 
-        target.setLabel("Mean: "+df2.format(avg));
-        target.setLabelFont(new Font("SansSerif", Font.ITALIC, 14));
-        target.setLabelAnchor(RectangleAnchor.LEFT);
-        target.setLabelTextAnchor(TextAnchor.CENTER_LEFT);
-        target.setPaint(new Color(222, 222, 255, 128));
-        plot.addRangeMarker(target, Layer.BACKGROUND);
+        if(!value.equals("People")) {
+        	target.setLabel("Mean: "+df2.format(avg));
+        	target.setLabelFont(new Font("SansSerif", Font.ITALIC, 14));
+        	target.setLabelAnchor(RectangleAnchor.LEFT);
+        	target.setLabelTextAnchor(TextAnchor.CENTER_LEFT);
+        	target.setPaint(new Color(222, 222, 255, 128));
+        	plot.addRangeMarker(target, Layer.BACKGROUND);
+        }
         
         
         BufferedImage bImg = chart.createBufferedImage(550, 700);

@@ -10,11 +10,13 @@ public class Packet {
 	 public short route;
 	 public short noise;
 	 public short co2;
-	 /*public short pressure;
+	 public short out;
+	 public short in;	 
+	 public short pressure;
 	 public short temperature;
-	 public short luminosity;*/
+	 public short luminosity;
 	 
-	 public Packet(long t, short lR, short s, short c, short r, short n, short co2/*, short p, short temp, short lum*/){
+	 public Packet(long t, short lR, short s, short c, short r, short n, short co2, short in, short out, short p, short temp, short lum){
 		 this.time = t;
 		 this.lastRouter = lR;
 		 this.sender = s;
@@ -22,9 +24,11 @@ public class Packet {
 		 this.route = r;
 		 this.noise = n;
 		 this.co2 = co2;
-		 /*this.pressure = p;
+		 this.in = in;
+		 this.out = out;
+		 this.pressure = p;
 		 this.temperature = temp;
-		 this.luminosity = lum;*/
+		 this.luminosity = lum;
 		 
 	 }
 	 
