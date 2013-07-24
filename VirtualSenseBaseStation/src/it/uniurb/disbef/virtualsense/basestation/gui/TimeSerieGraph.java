@@ -5,12 +5,15 @@ import it.uniurb.disbef.virtualsense.basestation.Node;
 import it.uniurb.disbef.virtualsense.basestation.Packet;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -20,15 +23,22 @@ import javax.swing.JPanel;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
+import org.jfree.chart.plot.IntervalMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYDotRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.time.Day;
 import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
+import org.jfree.ui.Layer;
+import org.jfree.ui.RectangleAnchor;
+import org.jfree.ui.RectangleInsets;
 import org.jfree.ui.RefineryUtilities;
+import org.jfree.ui.TextAnchor;
 import org.jfree.util.ShapeUtilities;
  
 public class TimeSerieGraph {
@@ -37,6 +47,8 @@ public class TimeSerieGraph {
 	public BufferedImage createTimeSeriesXYChart(Node nn, String value)
     {
  
+		double avg = 0;
+		int counter = 0;
         TimeSeries series = new TimeSeries( "", Second.class );
         System.out.println("Creating graph for "+nn.myPackets.size()+" packets ");
  
@@ -45,42 +57,87 @@ public class TimeSerieGraph {
         
         while(it.hasNext()){
         	Packet p  = it.next();
-        	if(value.equals("Counter"))
+        	if(value.equals("Counter")){
+        		avg+=p.counter;
+    			counter++;
         		series.addOrUpdate(new Second(new Date(p.time)), p.counter);
-        	if(value.equals("CO2"))
+        	}
+        	if(value.equals("CO2") && p.co2 > 100) {
         		series.addOrUpdate(new Second(new Date(p.time)), p.co2);
-        	if(value.equals("Noise"))
+        		avg+=p.co2;
+        		counter++;        		
+        	}
+        	if(value.equals("Noise") && p.noise != 0){
+        		avg+=p.noise;
+        		counter++;
         		series.addOrUpdate(new Second(new Date(p.time)), p.noise);
+        	}
         	//System.out.println(" time: "+p.time+" counter: "+p.counter);
         }
+        
+        
+        System.out.println("AVG is: "+avg);
+        avg = avg/counter;
+        System.out.println("AVG is: "+avg);
         
         TimeSeriesCollection dataset=new TimeSeriesCollection();
         dataset.addSeries(series);
  
         JFreeChart chart = ChartFactory.createTimeSeriesChart
-        (value+": of the node "+nn.ID,    // Title
+        (value+": node "+nn.ID,    // Title
          "Time",                     // X-Axis label
          value+" value",             // Y-Axis label
          dataset,               // Dataset
          true,                      // Show legend
          true,              //tooltips
-         false              //url
+         true              //url
         );
- 
         
-          Shape shape  = new Ellipse2D.Double(0,0,5,5);
+        /*
+        XYPlot plot = (XYPlot) chart.getPlot();
+        final IntervalMarker target = new IntervalMarker(400.0, 700.0);
+        target.setLabel("Target Range");
+        target.setLabelFont(new Font("SansSerif", Font.ITALIC, 11));
+        target.setLabelAnchor(RectangleAnchor.LEFT);
+        target.setLabelTextAnchor(TextAnchor.CENTER_LEFT);
+        target.setPaint(new Color(222, 222, 255, 128));
+        plot.addRangeMarker(target, Layer.BACKGROUND); */
+        
+        chart.setBackgroundPaint(Color.white);
+
+        XYPlot plot = (XYPlot) chart.getPlot();
+        plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
+        plot.setDomainCrosshairVisible(true);
+        plot.setRangeCrosshairVisible(true);
+        
+        XYItemRenderer r = plot.getRenderer();
+        if (r instanceof XYLineAndShapeRenderer) {
+            XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) r;
+            renderer.setBaseShapesVisible(true);
+            renderer.setBaseShapesFilled(true);
+        }
+        
+       /* DateAxis axis = (DateAxis) plot.getDomainAxis();
+        axis.setDateFormatOverride(new SimpleDateFormat("d-m-yyyy")); */
+        
+        plot.getRangeAxis(0).setLowerBound(0);
+        if(value.equals("CO2")) {
+        	double upperMargin = plot.getRangeAxis(0).getUpperBound();
+        	plot.getRangeAxis(0).setUpperBound(upperMargin+100);
+        }
+        double deviation = 2*standardDeviation(avg, series);
+        
+        final IntervalMarker target = new IntervalMarker(avg-deviation, avg+deviation);
+        DecimalFormat df2 = new DecimalFormat( "#,###,###,##0.00" );
+
+        target.setLabel("Mean: "+df2.format(avg));
+        target.setLabelFont(new Font("SansSerif", Font.ITALIC, 14));
+        target.setLabelAnchor(RectangleAnchor.LEFT);
+        target.setLabelTextAnchor(TextAnchor.CENTER_LEFT);
+        target.setPaint(new Color(222, 222, 255, 128));
+        plot.addRangeMarker(target, Layer.BACKGROUND);
         
         
-       // saveChart(chart);
-        final XYPlot plot = chart.getXYPlot();
-        XYItemRenderer renderer = plot.getRenderer();
-        renderer.setBaseShape(shape);
-        renderer.setBasePaint(Color.red);
-        
-        
-       
-        
-        renderer.setSeriesShape(0, shape);
         BufferedImage bImg = chart.createBufferedImage(550, 700);
         return bImg;
         
@@ -90,7 +147,7 @@ public class TimeSerieGraph {
  
     public void saveChart(JFreeChart chart)
     {
-        String fileName="C:/Users/kushal/Desktop/myTimeSeriesChart.jpg";
+        String fileName="myTimeSeriesChart.jpg";
         try {
             /**
              * This utility saves the JFreeChart as a JPEG
@@ -104,5 +161,35 @@ public class TimeSerieGraph {
             e.printStackTrace();
             System.err.println("Problem occurred creating chart.");
         }
-    }    
+    }  
+    
+    public double standardDeviation(double mean, TimeSeries serie){
+    	double result = 0;
+    	
+    	  double[] deviations = new double[serie.getItemCount()];
+    	  
+    	  // Taking the deviation of mean from each numbers
+    	  for(int i = 0; i < deviations.length; i++) {
+    	   deviations[i] = serie.getValue(i).doubleValue() - mean ;    	    
+    	  }
+    	 
+    	  double[] squares = new double[serie.getItemCount()];
+    	 
+    	  // getting the squares of deviations
+    	  for(int i =0; i< squares.length; i++) {
+    	   squares[i] = deviations[i] * deviations[i];
+    	  }
+    	
+    	  double sum = 0;
+    	 
+    	  // adding all the squares
+    	  for(int i =0; i< squares.length; i++) {
+    	   sum = sum + squares[i];
+    	  }
+    	 
+    	 
+    	  // dividing the numbers by one less than total numbers
+    	  result = sum / (serie.getItemCount() - 1); 
+    	  return Math.sqrt(result);
+    }
 }
