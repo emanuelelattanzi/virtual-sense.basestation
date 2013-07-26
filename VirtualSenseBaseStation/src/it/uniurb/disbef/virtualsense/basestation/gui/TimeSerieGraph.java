@@ -49,9 +49,23 @@ public class TimeSerieGraph {
  
 		double avg = 0;
 		int counter = 0;
-        TimeSeries series = new TimeSeries( "", Second.class );
-        TimeSeries series2 = new TimeSeries( "", Second.class );
-        TimeSeries series3 = new TimeSeries( "", Second.class );
+		TimeSeries series = null;
+		String serieLabel = value;
+		if(value.equals("CO2")) {
+			serieLabel+=" [ppm]";
+		}else if (value.equals("Counter")){
+			serieLabel+=" [#]";
+		}else if (value.equals("Noise")){
+			serieLabel+=" [dB]";
+		}else if (value.equals("People")){
+			serieLabel+=" [#]";
+		}
+		if(value.equals("People"))
+         series = new TimeSeries( value+" in", Second.class );
+		else 
+			series = new TimeSeries( value, Second.class );
+        TimeSeries series2 = new TimeSeries( "People out", Second.class );
+        TimeSeries series3 = new TimeSeries( "People total", Second.class );
         System.out.println("Creating graph for "+nn.myPackets.size()+" packets ");
  
        
@@ -75,6 +89,7 @@ public class TimeSerieGraph {
         		series.addOrUpdate(new Second(new Date(p.time)), p.noise);
         	}
         	if(value.equals("People")){
+        		System.out.println("in "+p.in+" out "+p.out);
         		avg+=p.in;
     			counter++;
         		series.addOrUpdate(new Second(new Date(p.time)), p.in);
@@ -82,7 +97,9 @@ public class TimeSerieGraph {
         		series3.addOrUpdate(new Second(new Date(p.time)), p.in - p.out);
         	}
         	//System.out.println(" time: "+p.time+" counter: "+p.counter);
-        }       
+        }      
+        
+    
         
         avg = avg/counter;
         
@@ -96,7 +113,7 @@ public class TimeSerieGraph {
         JFreeChart chart = ChartFactory.createTimeSeriesChart
         (value+": node "+nn.ID,    // Title
          "Time",                     // X-Axis label
-         value+" value",             // Y-Axis label
+         serieLabel,             // Y-Axis label
          dataset,               // Dataset
          true,                      // Show legend
          true,              //tooltips
@@ -129,8 +146,17 @@ public class TimeSerieGraph {
         
        /* DateAxis axis = (DateAxis) plot.getDomainAxis();
         axis.setDateFormatOverride(new SimpleDateFormat("d-m-yyyy")); */
-        
-        plot.getRangeAxis(0).setLowerBound(0);
+        if(!value.equals("People")) 
+        	plot.getRangeAxis(0).setLowerBound(0);
+        else {
+        	double s1m = series.getMaxY();
+        	double s2m = series2.getMaxY();
+        	double s3m = series3.getMaxY();
+        	double max = Math.max(Math.max(s1m,s2m),s3m);
+        	plot.getRangeAxis(0).setUpperBound(max);
+        	//plot.getRangeAxis(1).setUpperBound(max);
+        	//plot.getRangeAxis(2).setUpperBound(max);
+        }
         if(value.equals("CO2")) {
         	double upperMargin = plot.getRangeAxis(0).getUpperBound();
         	plot.getRangeAxis(0).setUpperBound(upperMargin+100);
