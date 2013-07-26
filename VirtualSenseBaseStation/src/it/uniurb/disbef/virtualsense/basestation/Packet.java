@@ -37,7 +37,7 @@ public class Packet {
 		 if(this.route != 0){
 			 list = new LinkedList<Short>();
 			 for(short i = 1; i < 16; i++){
-				// System.out.println("comparing "+(0x01 << i)+" and "+this.route+" results: "+((0x01 << i) & this.route));
+				//System.out.println("comparing "+(0x01 << i)+" and "+this.route+" results: "+((0x01 << i) & this.route));
 				if(((0x01 << i) & this.route) == (0x01 << i)){
 					//System.out.println(i+" is a router");					
 					list.add(new Short(i));

@@ -170,11 +170,14 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener , Mo
                     g.fillOval(this.sinkX, this.sinkY, 20 , 20);
             }else {
             		LinkedList<Short> hops = this.lastPacket.getHospIndexes();
+            		System.out.println("This packet has "+hops.size()+" hops");
             		// find the closer 
-            		
-                    for(int i = 0; i < hops.size(); i++){
+            		int size = hops.size();
+                    for(int i = 0; i < size; i++){
                     	// find closer node
+                    	
                     	Node nn = findTheCloser(n, hops);
+                    	System.out.println("drawing link from "+n.ID+" to "+nn.ID);
                         g.drawLine(n.xLocation+5, n.yLocation+5, nn.xLocation+5, nn.yLocation+5);
                         g.fillOval(nn.xLocation, nn.yLocation, 20 , 20);
                         hops.remove(new Short(nn.ID));
