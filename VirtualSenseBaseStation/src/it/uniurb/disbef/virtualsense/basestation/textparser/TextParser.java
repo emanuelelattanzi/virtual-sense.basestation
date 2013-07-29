@@ -86,11 +86,11 @@ public class TextParser {
 				short value = Short.parseShort(tokenizer.nextToken());	
 				pressure = value;
 			}
-			if(tag.equals(">temperature") && tokenizer.hasMoreTokens()){		
+			if(tag.equals(">temp") && tokenizer.hasMoreTokens()){		
 				short value = Short.parseShort(tokenizer.nextToken());	
 				temperature = value;
 			}
-			if(tag.equals(">luminosity") && tokenizer.hasMoreTokens()){
+			if(tag.equals(">light") && tokenizer.hasMoreTokens()){
 				short value = Short.parseShort(tokenizer.nextToken());	
 				luminosity = value;
 			}

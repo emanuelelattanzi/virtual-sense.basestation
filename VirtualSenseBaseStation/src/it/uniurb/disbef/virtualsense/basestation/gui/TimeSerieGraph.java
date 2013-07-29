@@ -59,6 +59,12 @@ public class TimeSerieGraph {
 			serieLabel+=" [dB]";
 		}else if (value.equals("People")){
 			serieLabel+=" [#]";
+		}else if (value.equals("Temp")){
+			serieLabel+=" [C]";
+		}else if (value.equals("Pressure")){
+			serieLabel+=" [hPa]";
+		}else if (value.equals("Light")){
+			serieLabel+=" [Lx]";
 		}
 		if(value.equals("People"))
          series = new TimeSeries( value+" in", Second.class );
@@ -95,6 +101,21 @@ public class TimeSerieGraph {
         		series.addOrUpdate(new Second(new Date(p.time)), p.in);
         		series2.addOrUpdate(new Second(new Date(p.time)), p.out);
         		series3.addOrUpdate(new Second(new Date(p.time)), p.in - p.out);
+        	}
+        	if(value.equals("Temp")){
+        		avg+=p.temperature;
+    			counter++;
+        		series.addOrUpdate(new Second(new Date(p.time)), p.temperature);
+        	}
+        	if(value.equals("Pressure")){
+        		avg+=p.pressure;
+    			counter++;
+        		series.addOrUpdate(new Second(new Date(p.time)), p.pressure);
+        	}
+        	if(value.equals("Light")){
+        		avg+=p.luminosity;
+    			counter++;
+        		series.addOrUpdate(new Second(new Date(p.time)), p.luminosity);
         	}
         	//System.out.println(" time: "+p.time+" counter: "+p.counter);
         }      
