@@ -118,6 +118,7 @@ public class BaseStationLogger {
 	                short nodeId = Short.parseShort(tok.nextToken());
 	                int lati = Integer.parseInt(tok.nextToken());
 	                int longi = Integer.parseInt(tok.nextToken());
+	                String cap = tok.nextToken();
 	                
 	               
 	               if(lati < minLat)
@@ -127,7 +128,7 @@ public class BaseStationLogger {
 	                    minLongi = longi;                    
 	                                 
 	                
-	                Node n = new Node(nodeId, lati, longi);
+	                Node n = new Node(nodeId, lati, longi, cap);
 	                nodes.put(nodeId, n);	          
 	                //System.out.println("Creato nodo con "+n.getStringID()+" "+n.getShortID());
 	                temp = bReader.readLine();

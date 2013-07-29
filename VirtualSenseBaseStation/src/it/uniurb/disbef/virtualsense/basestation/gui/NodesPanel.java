@@ -350,14 +350,20 @@ public class NodesPanel extends javax.swing.JPanel implements MouseListener , Mo
 			System.out.println("Selected node is "+nn.ID);
 		
 			// choose what to plot
-			Object[] possibilities = {"Counter", "Noise", "CO2", "People", "Temp", "Pressure", "Light"};		
+			String[] possibilities = {"Counter", "Noise", "CO2", "People", "Temp", "Pressure", "Light"};	
+			Vector<String> ps = new Vector<String>();
+			for(int i = 0; i < possibilities.length; i++)
+				if(nn.hasCapability(possibilities[i]))
+					ps.add(possibilities[i]);
+			
+			Object[] realPossibilities = ps.toArray();
 			String s = (String)JOptionPane.showInputDialog(
 		                    this,
 		                    "Select the potting value",
 		                    "Plotting selection Dialog",
 		                    JOptionPane.PLAIN_MESSAGE,
 		                    null,
-		                    possibilities,
+		                    realPossibilities,
 		                    "Counter");
 		
 			if ((s != null) && (s.length() > 0)) {
