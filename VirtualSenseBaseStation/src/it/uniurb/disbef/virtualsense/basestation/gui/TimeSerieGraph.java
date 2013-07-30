@@ -43,85 +43,23 @@ import org.jfree.util.ShapeUtilities;
  
 public class TimeSerieGraph {
  
+	private double avg;
+	private int counter;
     
 	public BufferedImage createTimeSeriesXYChart(Node nn, String value)
-    {
- 
-		double avg = 0;
-		int counter = 0;
+    { 
+	
 		TimeSeries series = null;
-		String serieLabel = value;
-		if(value.equals("CO2")) {
-			serieLabel+=" [ppm]";
-		}else if (value.equals("Counter")){
-			serieLabel+=" [#]";
-		}else if (value.equals("Noise")){
-			serieLabel+=" [dB]";
-		}else if (value.equals("People")){
-			serieLabel+=" [#]";
-		}else if (value.equals("Temp")){
-			serieLabel+=" [C]";
-		}else if (value.equals("Pressure")){
-			serieLabel+=" [hPa]";
-		}else if (value.equals("Light")){
-			serieLabel+=" [Lx]";
-		}
+		String serieLabel = setSerieLabel(value);
+		
 		if(value.equals("People"))
          series = new TimeSeries( value+" in", Second.class );
 		else 
 			series = new TimeSeries( value, Second.class );
         TimeSeries series2 = new TimeSeries( "People out", Second.class );
         TimeSeries series3 = new TimeSeries( "People total", Second.class );
-        System.out.println("Creating graph for "+nn.myPackets.size()+" packets ");
- 
-       
-        Iterator<Packet> it = nn.myPackets.iterator();
         
-        while(it.hasNext()){
-        	Packet p  = it.next();
-        	if(value.equals("Counter")){
-        		avg+=p.counter;
-    			counter++;
-        		series.addOrUpdate(new Second(new Date(p.time)), p.counter);
-        	}
-        	if(value.equals("CO2") && p.co2 > 100) {
-        		series.addOrUpdate(new Second(new Date(p.time)), p.co2);
-        		avg+=p.co2;
-        		counter++;        		
-        	}
-        	if(value.equals("Noise") && p.noise != 0){
-        		avg+=p.noise;
-        		counter++;
-        		series.addOrUpdate(new Second(new Date(p.time)), p.noise);
-        	}
-        	if(value.equals("People")){
-        		System.out.println("in "+p.in+" out "+p.out);
-        		avg+=p.in;
-    			counter++;
-        		series.addOrUpdate(new Second(new Date(p.time)), p.in);
-        		series2.addOrUpdate(new Second(new Date(p.time)), p.out);
-        		series3.addOrUpdate(new Second(new Date(p.time)), p.in - p.out);
-        	}
-        	if(value.equals("Temp")){
-        		avg+=p.temperature;
-    			counter++;
-        		series.addOrUpdate(new Second(new Date(p.time)), p.temperature);
-        	}
-        	if(value.equals("Pressure")){
-        		avg+=p.pressure;
-    			counter++;
-        		series.addOrUpdate(new Second(new Date(p.time)), p.pressure);
-        	}
-        	if(value.equals("Light")){
-        		avg+=p.luminosity;
-    			counter++;
-        		series.addOrUpdate(new Second(new Date(p.time)), p.luminosity);
-        	}
-        	//System.out.println(" time: "+p.time+" counter: "+p.counter);
-        }      
-        
-    
-        
+        addDataToSeries(series, series2, series3, nn, value);   
         avg = avg/counter;
         
         TimeSeriesCollection dataset=new TimeSeriesCollection();
@@ -140,17 +78,6 @@ public class TimeSerieGraph {
          true,              //tooltips
          true              //url
         );
-        
-        /*
-        XYPlot plot = (XYPlot) chart.getPlot();
-        final IntervalMarker target = new IntervalMarker(400.0, 700.0);
-        target.setLabel("Target Range");
-        target.setLabelFont(new Font("SansSerif", Font.ITALIC, 11));
-        target.setLabelAnchor(RectangleAnchor.LEFT);
-        target.setLabelTextAnchor(TextAnchor.CENTER_LEFT);
-        target.setPaint(new Color(222, 222, 255, 128));
-        plot.addRangeMarker(target, Layer.BACKGROUND); */
-        
         chart.setBackgroundPaint(Color.white);
 
         XYPlot plot = (XYPlot) chart.getPlot();
@@ -164,39 +91,7 @@ public class TimeSerieGraph {
             renderer.setBaseShapesVisible(true);
             renderer.setBaseShapesFilled(true);
         }
-        
-       /* DateAxis axis = (DateAxis) plot.getDomainAxis();
-        axis.setDateFormatOverride(new SimpleDateFormat("d-m-yyyy")); */
-        if(!value.equals("People")) 
-        	plot.getRangeAxis(0).setLowerBound(0);
-        else {
-        	double s1m = series.getMaxY();
-        	double s2m = series2.getMaxY();
-        	double s3m = series3.getMaxY();
-        	double max = Math.max(Math.max(s1m,s2m),s3m);
-        	plot.getRangeAxis(0).setUpperBound(max);
-        	//plot.getRangeAxis(1).setUpperBound(max);
-        	//plot.getRangeAxis(2).setUpperBound(max);
-        }
-        if(value.equals("CO2")) {
-        	double upperMargin = plot.getRangeAxis(0).getUpperBound();
-        	plot.getRangeAxis(0).setUpperBound(upperMargin+100);
-        }
-        double deviation = 2*standardDeviation(avg, series);
-        
-        final IntervalMarker target = new IntervalMarker(avg-deviation, avg+deviation);
-        DecimalFormat df2 = new DecimalFormat( "#,###,###,##0.00" );
-
-        if(!value.equals("People")) {
-        	target.setLabel("Mean: "+df2.format(avg));
-        	target.setLabelFont(new Font("SansSerif", Font.ITALIC, 14));
-        	target.setLabelAnchor(RectangleAnchor.LEFT);
-        	target.setLabelTextAnchor(TextAnchor.CENTER_LEFT);
-        	target.setPaint(new Color(222, 222, 255, 128));
-        	plot.addRangeMarker(target, Layer.BACKGROUND);
-        }
-        
-        
+        setGraphMargin(value, plot, series, series2, series3);
         BufferedImage bImg = chart.createBufferedImage(550, 700);
         return bImg;
         
@@ -250,5 +145,111 @@ public class TimeSerieGraph {
     	  // dividing the numbers by one less than total numbers
     	  result = sum / (serie.getItemCount() - 1); 
     	  return Math.sqrt(result);
+    }
+    
+    private String setSerieLabel(String value){
+    	String serieLabel = value;
+    	if(value.equals("CO2")) {
+			serieLabel+=" [ppm]";
+		}else if (value.equals("Counter")){
+			serieLabel+=" [#]";
+		}else if (value.equals("Noise")){
+			serieLabel+=" [dB]";
+		}else if (value.equals("People")){
+			serieLabel+=" [#]";
+		}else if (value.equals("Temp")){
+			serieLabel+=" [C]";
+		}else if (value.equals("Pressure")){
+			serieLabel+=" [hPa]";
+		}else if (value.equals("Light")){
+			serieLabel+=" [Lx]";
+		}
+    	return serieLabel;
+    }
+    
+    private void addDataToSeries(TimeSeries s1, TimeSeries s2, TimeSeries s3, Node nn, String value){
+    	Iterator<Packet> it = nn.myPackets.iterator();
+        
+        while(it.hasNext()){
+        	Packet p  = it.next();
+        	if(value.equals("Counter")){
+        		avg+=p.counter;
+    			counter++;
+        		s1.addOrUpdate(new Second(new Date(p.time)), p.counter);
+        	}
+        	if(value.equals("CO2") && p.co2 > 100) {
+        		s1.addOrUpdate(new Second(new Date(p.time)), p.co2);
+        		avg+=p.co2;
+        		counter++;        		
+        	}
+        	if(value.equals("Noise") && p.noise != 0){
+        		avg+=p.noise;
+        		counter++;
+        		s1.addOrUpdate(new Second(new Date(p.time)), p.noise);
+        	}
+        	if(value.equals("People")){
+        		avg+=p.in;
+    			counter++;
+        		s1.addOrUpdate(new Second(new Date(p.time)), p.in);
+        		s2.addOrUpdate(new Second(new Date(p.time)), p.out);
+        		s3.addOrUpdate(new Second(new Date(p.time)), p.in - p.out);
+        	}
+        	if(value.equals("Temp") &&(p.temperature < 10000)  &&(p.temperature > 0)){
+        		avg+=(((double)p.temperature)/100);
+    			counter++;
+        		s1.addOrUpdate(new Second(new Date(p.time)), (((double)p.temperature)/100));
+        	}
+        	if(value.equals("Pressure") && (p.pressure < 1400) && (p.pressure > 700)){
+        		avg+=p.pressure;
+    			counter++;
+        		s1.addOrUpdate(new Second(new Date(p.time)), p.pressure);
+        	}
+        	if(value.equals("Light") && (p.luminosity > 15)){
+        		avg+=p.luminosity;
+    			counter++;
+        		s1.addOrUpdate(new Second(new Date(p.time)), p.luminosity);
+        	}
+        	//System.out.println(" time: "+p.time+" counter: "+p.counter);
+        }      
+    
+    }
+    
+    private void setGraphMargin(String value, XYPlot plot, TimeSeries s1, TimeSeries s2, TimeSeries s3){
+        
+    	 double deviation = 2*standardDeviation(avg, s1);
+         if(!value.equals("People")) 
+         	plot.getRangeAxis(0).setLowerBound(0);
+         else {
+         	double s1m = s1.getMaxY();
+         	double s2m = s2.getMaxY();
+         	double s3m = s3.getMaxY();
+         	double max = Math.max(Math.max(s1m,s2m),s3m);
+         	plot.getRangeAxis(0).setUpperBound(max);
+         }
+         if(value.equals("CO2")) {
+         	double upperMargin = plot.getRangeAxis(0).getUpperBound();
+         	plot.getRangeAxis(0).setUpperBound(upperMargin+100);
+         }else if(value.equals("Pressure")){         	
+         	plot.getRangeAxis(0).setUpperBound(1400);
+         }else if(value.equals("Temp")){
+         	double upperMargin = plot.getRangeAxis(0).getUpperBound();
+         	plot.getRangeAxis(0).setUpperBound(upperMargin+deviation+10);
+         }else {
+         	double upperMargin = plot.getRangeAxis(0).getUpperBound();
+         	plot.getRangeAxis(0).setUpperBound(upperMargin+deviation);
+         }
+         
+         
+         final IntervalMarker target = new IntervalMarker(avg-deviation, avg+deviation);
+         DecimalFormat df2 = new DecimalFormat( "#,###,###,##0.00" );
+
+         if(!value.equals("People")) {
+         	target.setLabel("Mean: "+df2.format(avg));
+         	target.setLabelFont(new Font("SansSerif", Font.ITALIC, 14));
+         	target.setLabelAnchor(RectangleAnchor.LEFT);
+         	target.setLabelTextAnchor(TextAnchor.CENTER_LEFT);
+         	target.setPaint(new Color(222, 222, 255, 128));
+         	plot.addRangeMarker(target, Layer.BACKGROUND);
+         }
     }
 }
