@@ -65,7 +65,7 @@
           </execution>
         </executions>
         <configuration>
-          <mainClass>com.google.api.services.samples.fusiontables.cmdline.FusionTablesSample</mainClass>
+          <mainClass>it.uniurb.disbef.virtualsense.basestation.gui.GUI</mainClass>
           <systemProperties>
             <systemProperty>
               <key>java.util.logging.config.file</key>

@@ -172,7 +172,7 @@ public class BaseStationLogger {
 	    Table tb = null;
 	    //listOfTables.getItems();
 	    for (Table table : listOfTables.getItems()) {
-	        if(table.getName().endsWith(""+id)){
+	        if(table.getName().endsWith("_"+id)){
 	          tb = table;
 	          break;
 	        }

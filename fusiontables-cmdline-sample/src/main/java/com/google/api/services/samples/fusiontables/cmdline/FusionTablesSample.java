@@ -197,6 +197,26 @@ public class FusionTablesSample {
       // http://code.google.com/p/google-api-java-client/issues/detail?id=545
     }
   }
+  
+  /** Inserts a row in the newly created table for the authenticated user. */
+  public static void insertDataToGlobalCounter(long time, 
+                                 String peopleIn, String peopleOut, 
+                                 String peopleInside) throws IOException {
+    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    Sql sql = fusiontables.query().sql("INSERT INTO 1NXfpTG1dPA3arfLMW7WNmLm6sme1X17obBrMkN0 (PeopleIn,PeopleOut,PeopleInside,Date)"
+        + " VALUES (" + "'"+peopleIn+"', '"+peopleOut+"','"+peopleInside+"', '" + format.format(new Date(time)) + "')");
+    
+    System.out.println(sql.toString());
+
+    try {
+      sql.execute();
+    } catch (IllegalArgumentException e) {
+      // For google-api-services-fusiontables-v1-rev1-1.7.2-beta this exception will always
+      // been thrown.
+      // Please see issue 545: JSON response could not be deserialized to Sqlresponse.class
+      // http://code.google.com/p/google-api-java-client/issues/detail?id=545
+    }
+  }
 
   /** Deletes a table for the authenticated user. */
   private static void deleteTable(String tableId) throws IOException {

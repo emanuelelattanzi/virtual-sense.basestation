@@ -13,6 +13,13 @@ public class Node {
 	public long lastPacketTimeStamp = 0;
 	public short routedPacket = 0;
 	public String capabilities;
+	public short lastInValue;
+	public short lastOutValue;	
+	public short xInValue;
+	public short yInValue;	
+	public short xOutValue;
+	public short yOutValue;
+	
 	
 	public Node(short id){
 		this.ID = id;

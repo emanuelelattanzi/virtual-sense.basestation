@@ -37,11 +37,12 @@ public class FusionTableUpdater extends Thread{
         
         // process nodesOnSend
         Enumeration<Short> e = this.packetsOnSend.keys();
+        FusionTableGlobalPeopleRecord np = new FusionTableGlobalPeopleRecord();
         while(e.hasMoreElements()){
           short nodeID = e.nextElement().shortValue();
           LinkedList<Packet> p = this.packetsOnSend.get(nodeID);
           // make average on this packet and send to the fusion table
-          FusionTableNodeRecord nr = new FusionTableNodeRecord();
+          FusionTableNodeRecord nr = new FusionTableNodeRecord();          
           Node nn = BaseStationLogger.nodes.get(nodeID);
           // for each packet 
           for(int i = 0; i < p.size(); i++){
@@ -57,8 +58,18 @@ public class FusionTableUpdater extends Thread{
               nr.co2Counter++;
             }
             if(nn.hasCapability("People")){
+              /*if(nn.lastInValue > pa.in || nn.lastOutValue > pa.out){ // shut down has been detected 
+            	  nn.xInValue = pa.in;
+            	  nn.xOutValue = pa.out;
+            	  np.in = nn.lastInValue
+            			  
+              }
+              
               nr.in = pa.in;
-              nr.out = pa.out;
+              nr.out = pa.out; */
+              nn.lastInValue = pa.in;
+              nn.lastOutValue = pa.out;
+              
             }
             if(nn.hasCapability("Pressure")  && (pa.pressure < 1400) && (pa.pressure > 700)){
               nr.pressure += pa.pressure;
@@ -94,8 +105,18 @@ public class FusionTableUpdater extends Thread{
               exception.printStackTrace();
             }
           }
+          if(nn.hasCapability("People")){
+        	  np.in+=nn.lastInValue;
+        	  np.out+=nn.lastOutValue;
+          }
         }// end for each node
-        
+        np.inside = (short)(np.in - np.out);
+        try {
+			FusionTablesSample.insertDataToGlobalCounter(System.currentTimeMillis(), ""+np.in, ""+np.out, ""+np.inside);
+		} catch (IOException exception) {
+			// TODO Auto-generated catch block
+			exception.printStackTrace();
+		}
         
         Thread.sleep(1000*60*5);
       } catch (InterruptedException exception) {
