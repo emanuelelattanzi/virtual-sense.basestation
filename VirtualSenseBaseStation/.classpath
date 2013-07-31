@@ -3,7 +3,7 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry exported="true" kind="lib" path="/usr/share/java/RXTXcomm.jar"/>
-	<classpathentry kind="lib" path="/home/lattanzi/git/virtualsense-basestation/VirtualSenseBaseStation/jcommon-1.0.18.jar"/>
-	<classpathentry kind="lib" path="/home/lattanzi/git/virtualsense-basestation/VirtualSenseBaseStation/jfreechart-1.0.15.jar"/>
+	<classpathentry kind="lib" path="/home/virtualsense/git/virtual-sense.basestation/VirtualSenseBaseStation/jcommon-1.0.18.jar"/>
+	<classpathentry kind="lib" path="/home/virtualsense/git/virtual-sense.basestation/VirtualSenseBaseStation/jfreechart-1.0.15.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

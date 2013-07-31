@@ -51,7 +51,7 @@ public class FusionTablesSample {
    * Be sure to specify the name of your application. If the application name is {@code null} or
    * blank, the application will log a warning. Suggested format is "MyCompany-ProductName/1.0".
    */
-  private static final String APPLICATION_NAME = "";
+  private static final String APPLICATION_NAME = "VirtualSenseBaseStation";
   
   /** Global instance of the HTTP transport. */
   private static HttpTransport HTTP_TRANSPORT;

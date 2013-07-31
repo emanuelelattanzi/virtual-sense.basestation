@@ -82,10 +82,13 @@ public class FusionTableUpdater extends Thread{
             
             // send data to fusion tables
             try {
+            	System.out.println("Inserting record for node "+nn.ID);
             FusionTablesSample.insertData(toUpdate.getTableId(), System.currentTimeMillis(), 
-                  ""+nr.counter, format.format(nr.noise), 
-                  format.format(nr.co2), ""+nr.in, ""+nr.out, 
-                  format.format(nr.pressure), format.format(nr.temperature), format.format(nr.luminosity));
+                  ""+nr.counter, nr.noiseCounter>0?format.format(nr.noise/nr.noiseCounter):"0", 
+                  nr.co2Counter>0?format.format(nr.co2/nr.co2Counter):"0", ""+nr.in, ""+nr.out, 
+                  nr.pressureCounter>0?format.format(nr.pressure/nr.pressureCounter):"0", 
+                  nr.temperatureCounter>0?format.format(nr.temperature/nr.temperatureCounter):"0", 
+                  nr.luminosityCounter>0?format.format(nr.luminosity/nr.luminosityCounter):"0");
             } catch (IOException exception) {
               // TODO Auto-generated catch block
               exception.printStackTrace();
