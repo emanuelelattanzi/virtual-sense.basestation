@@ -117,7 +117,7 @@ public class FusionTableUpdater extends Thread{
         	} catch (IOException exception) {
         		// TODO Auto-generated catch block
         		exception.printStackTrace();
-        	}
+        	} 
         
         Thread.sleep(1000*60*2);
       } catch (InterruptedException exception) {
