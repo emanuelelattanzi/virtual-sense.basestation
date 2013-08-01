@@ -32,6 +32,9 @@ import com.google.api.services.fusiontables.model.Column;
 import com.google.api.services.fusiontables.model.Table;
 import com.google.api.services.fusiontables.model.TableList;
 
+import it.uniurb.disbef.virtualsense.basestation.BaseStationLogger;
+import it.uniurb.disbef.virtualsense.basestation.FusionTableNodeRecord;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -225,4 +228,26 @@ public class FusionTablesSample {
     Delete delete = fusiontables.table().delete(tableId);
     delete.execute();
   }
+
+/**
+ * @param nr
+ */
+public static void insertData(FusionTableNodeRecord nr) throws IOException{
+	java.text.DecimalFormat format = new java.text.DecimalFormat("0.00");
+	
+    Table toUpdate = BaseStationLogger.findTableByNodeID(nr.nodeID);    
+    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    Sql sql = fusiontables.query().sql("INSERT INTO " + toUpdate.getTableId() + 
+    		" (Noise,CO2,Temperature,Pressure,Light, PeopleOut, PeopleIn, Counter,Date)"
+        + " VALUES (" + "'"+format.format(nr.noise)+"', '"+format.format(nr.co2)+"','"+
+    		format.format(nr.temperature)+"', '"+format.format(nr.pressure)+"','"+
+            format.format(nr.luminosity)+"','"+format.format(nr.out)+"','"+
+            format.format(nr.in)+"','"+format.format(nr.counter)+"'"
+        + ",'" + format.format(new Date(System.currentTimeMillis())) + "')");
+    
+    System.out.println(sql.toString());
+
+    
+    sql.execute();
+}
 }

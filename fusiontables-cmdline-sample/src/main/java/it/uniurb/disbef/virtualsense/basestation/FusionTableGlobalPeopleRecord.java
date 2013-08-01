@@ -7,5 +7,5 @@ package it.uniurb.disbef.virtualsense.basestation;
 public class FusionTableGlobalPeopleRecord {
   public short out;
   public short in;    
-  public short inside;
+  public int inside;
 }

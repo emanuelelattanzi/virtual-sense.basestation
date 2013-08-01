@@ -5,6 +5,7 @@ package it.uniurb.disbef.virtualsense.basestation;
  *
  */
 public class FusionTableNodeRecord {
+  public short nodeID;
   public short counter;
   public double noise;
   public int noiseCounter;
@@ -18,4 +19,8 @@ public class FusionTableNodeRecord {
   public int temperatureCounter;
   public double luminosity;
   public int luminosityCounter;
+  
+  public FusionTableNodeRecord(short id){
+	  this.nodeID = id;
+  }
 }
