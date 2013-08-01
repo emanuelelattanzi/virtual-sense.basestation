@@ -203,7 +203,7 @@ public class FusionTablesSample {
                                  String peopleIn, String peopleOut, 
                                  String peopleInside) throws IOException {
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    Sql sql = fusiontables.query().sql("INSERT INTO 1NXfpTG1dPA3arfLMW7WNmLm6sme1X17obBrMkN0 (PeopleIn,PeopleOut,PeopleInside,Date)"
+    Sql sql = fusiontables.query().sql("INSERT INTO 1bEiHoWTB5Eo5iCMwNJCgf5g7swL4RFGENAt2bR0 (PeopleIn,PeopleOut,PeopleInside,Date)"
         + " VALUES (" + "'"+peopleIn+"', '"+peopleOut+"','"+peopleInside+"', '" + format.format(new Date(time)) + "')");
     
     System.out.println(sql.toString());

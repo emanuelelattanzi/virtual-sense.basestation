@@ -76,7 +76,7 @@ public class FusionTableUpdater extends Thread{
               nr.pressureCounter++;
             }
             if(nn.hasCapability("Temp") &&(pa.temperature < 10000)  &&(pa.temperature > 0)){
-              nr.temperature += (pa.temperature/100);
+              nr.temperature += (((double)pa.temperature/100));
               nr.temperatureCounter++;
             }
             if(nn.hasCapability("Light") && (pa.luminosity > 15)){
@@ -111,14 +111,15 @@ public class FusionTableUpdater extends Thread{
           }
         }// end for each node
         np.inside = (short)(np.in - np.out);
-        try {
-			FusionTablesSample.insertDataToGlobalCounter(System.currentTimeMillis(), ""+np.in, ""+np.out, ""+np.inside);
-		} catch (IOException exception) {
-			// TODO Auto-generated catch block
-			exception.printStackTrace();
-		}
+        if(this.packetsOnSend.size() > 0)
+        	try {
+        		FusionTablesSample.insertDataToGlobalCounter(System.currentTimeMillis(), ""+np.in, ""+np.out, ""+np.inside);
+        	} catch (IOException exception) {
+        		// TODO Auto-generated catch block
+        		exception.printStackTrace();
+        	}
         
-        Thread.sleep(1000*60*5);
+        Thread.sleep(1000*60*2);
       } catch (InterruptedException exception) {
         // TODO Auto-generated catch block
         exception.printStackTrace();
