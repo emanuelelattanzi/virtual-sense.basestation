@@ -185,6 +185,9 @@ public class GUI extends JFrame {
 		debugScrollPane.setViewportView(debugArea);
 		
 		BaseStationLogger.createNodesFromFile("nodes.txt");
+		
+		// auto-connect to made software autobootable
+		connectAction();
 	}
 	
 	protected void loadNodesFileAction() {

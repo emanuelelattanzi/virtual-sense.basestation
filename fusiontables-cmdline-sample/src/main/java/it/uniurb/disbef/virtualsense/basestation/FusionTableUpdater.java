@@ -5,6 +5,7 @@ package it.uniurb.disbef.virtualsense.basestation;
 import com.google.api.services.samples.fusiontables.cmdline.FusionTablesSample;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -21,7 +22,7 @@ public class FusionTableUpdater extends Thread{
   private FusionTableGlobalPeopleRecord globalRecord = new FusionTableGlobalPeopleRecord();
   
   private ReentrantLock lock = new ReentrantLock();
-  
+  int cycleCounter = 0;
 
   
   public FusionTableUpdater(){
@@ -30,7 +31,18 @@ public class FusionTableUpdater extends Thread{
   
   @Override
   public void run(){
+	  // start resetter thread
+	  CounterResetter resetter = new CounterResetter();
+	  resetter.start();
+	  
     while(true){
+      if(cycleCounter == 0)
+		try {
+			globalRecord = FusionTablesSample.initGlobalRecord(globalRecord);
+		} catch (IOException exception1) {
+			// TODO Auto-generated catch block
+			exception1.printStackTrace();
+		}
       this.lock.lock();
       try {
     	  // switch packet buffer pointers
@@ -60,24 +72,35 @@ public class FusionTableUpdater extends Thread{
         }// end for each node  
         Enumeration<Node>nodes = this.lastNodeRecords.keys();
         // for each node
-        while(e.hasMoreElements()){
-        	Node n = nodes.nextElement();
-        	FusionTableNodeRecord nodeRecord = this.lastNodeRecords.get(n);
-        	globalRecord.in+=nodeRecord.in; // sum epoch deltas to global counters
-        	globalRecord.out+=nodeRecord.out;
+        if(this.packetsOnSend.size() > 0){
+	        System.out.println("Calculating global values ...");
+	        while(nodes.hasMoreElements()){        	
+	        	Node n = nodes.nextElement();
+	        	System.out.println("Processing node "+n.ID);
+	        	FusionTableNodeRecord nodeRecord = this.lastNodeRecords.get(n);
+	        	globalRecord.in+=nodeRecord.in; // sum epoch deltas to global counters
+	        	globalRecord.out+=nodeRecord.out;
+	        	System.out.println("add to global record: "+nodeRecord.in);
+	        	System.out.println("add to global record: "+nodeRecord.out);
+	        }
+	        globalRecord.inside = globalRecord.in - globalRecord.out;      
+	        if(globalRecord.inside < 0){
+	        	globalRecord.inside = 0;
+	        	globalRecord.out = globalRecord.in;
+	        }
+	        
+	                
+	        // save to the fusion table the global counter values 
+	        if(this.lastNodeRecords.size() > 0)
+	        	try {
+	        		FusionTablesSample.insertDataToGlobalCounter(System.currentTimeMillis(), ""+globalRecord.in, ""+globalRecord.out, ""+globalRecord.inside);
+	        	} catch (IOException exception) {
+	        		// TODO Auto-generated catch block
+	        		exception.printStackTrace();
+	        	}  
         }
-        globalRecord.inside = globalRecord.in - globalRecord.out;      
-                
-        // save to the fusion table the global counter values 
-        if(this.lastNodeRecords.size() > 0)
-        	try {
-        		FusionTablesSample.insertDataToGlobalCounter(System.currentTimeMillis(), ""+globalRecord.in, ""+globalRecord.out, ""+globalRecord.inside);
-        	} catch (IOException exception) {
-        		// TODO Auto-generated catch block
-        		exception.printStackTrace();
-        	}     
-        
-        Thread.sleep(1000*60*2);
+        cycleCounter++;
+        Thread.sleep(1000*60*5);
       } catch (InterruptedException exception) {
         // TODO Auto-generated catch block
         exception.printStackTrace();
@@ -130,15 +153,20 @@ public class FusionTableUpdater extends Thread{
 	            	deltaOut = pa.out;
 	            }else {
 	            	// calculate delta and sum it to the node record to obtain the epoch delta
-	            	deltaIn =  (nn.lastInValue - pa.in);
-	            	deltaOut = (nn.lastOutValue - pa.out);
+	            	deltaIn =  (pa.in - nn.lastInValue );
+	            	deltaOut = (pa.out - nn.lastOutValue);
 	            	System.out.println("Calculated delta in steady sistuation for nodeID "+nn.ID+" in "+
 	            	deltaIn+" out "+deltaOut);
+	            	System.out.println("lastInValue : "+nn.lastInValue+" "
+	            					+  "lastOutValue: "+nn.lastOutValue+" "
+	            					+  "pa.in: "+pa.in+" pa.out: "+pa.out);
 	            }
 	            nn.lastInValue = pa.in;
             	nn.lastOutValue = pa.out;
 	            newNodeRecord.in += deltaIn;
 	            newNodeRecord.out += deltaOut;
+	            System.out.println("NewNodeRecord.in : "+newNodeRecord.in+" "
+    					+  "newNodeRecord.out"+newNodeRecord.out);
 	            
 	          }
 	          if(nn.hasCapability("Pressure")  && (pa.pressure < 1400) && (pa.pressure > 700)){
@@ -189,5 +217,34 @@ public class FusionTableUpdater extends Thread{
 		
 		return newNodeRecord;
 	}
+  
+  private class CounterResetter extends Thread {
+	  private Date lastCheck;
+	  
+	  public CounterResetter(){
+		  lastCheck = new Date();
+	  }
+	  
+	  public void run(){
+		  while(true){
+			  try {
+				Date now = new Date();
+				if(now.getDay() != lastCheck.getDay()){
+				//if(now.getHours() != lastCheck.getHours()){
+					System.out.println("Resetting globalRecord at "+now);
+					System.out.println("in was: "+globalRecord.in+" and out was: "+globalRecord.out);
+					globalRecord = new FusionTableGlobalPeopleRecord();
+				}
+				lastCheck = now;
+				Thread.sleep(1000*60*10);
+			  } catch (InterruptedException exception) {
+				// TODO Auto-generated catch block
+				exception.printStackTrace();
+			  }
+		  }
+		  
+	  }
+	  
+  }
 
 }

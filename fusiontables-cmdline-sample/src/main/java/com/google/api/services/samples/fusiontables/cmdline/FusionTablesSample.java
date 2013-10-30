@@ -29,10 +29,12 @@ import com.google.api.services.fusiontables.Fusiontables.Query.Sql;
 import com.google.api.services.fusiontables.Fusiontables.Table.Delete;
 import com.google.api.services.fusiontables.FusiontablesScopes;
 import com.google.api.services.fusiontables.model.Column;
+import com.google.api.services.fusiontables.model.Sqlresponse;
 import com.google.api.services.fusiontables.model.Table;
 import com.google.api.services.fusiontables.model.TableList;
 
 import it.uniurb.disbef.virtualsense.basestation.BaseStationLogger;
+import it.uniurb.disbef.virtualsense.basestation.FusionTableGlobalPeopleRecord;
 import it.uniurb.disbef.virtualsense.basestation.FusionTableNodeRecord;
 
 import java.io.File;
@@ -42,6 +44,8 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -243,11 +247,47 @@ public static void insertData(FusionTableNodeRecord nr) throws IOException{
     		format.format(nr.temperature)+"', '"+format.format(nr.pressure)+"','"+
             format.format(nr.luminosity)+"','"+format.format(nr.out)+"','"+
             format.format(nr.in)+"','"+format.format(nr.counter)+"'"
-        + ",'" + format.format(new Date(System.currentTimeMillis())) + "')");
+        + ",'" + dateFormat.format(new Date(System.currentTimeMillis())) + "')");
     
     System.out.println(sql.toString());
 
     
     sql.execute();
+}
+
+public static FusionTableGlobalPeopleRecord initGlobalRecord(FusionTableGlobalPeopleRecord r) throws IOException{
+	// read values from global table counter 
+    Date now = new Date();
+    now.setHours(0);
+    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    Sql sql = fusiontables.query().sql("SELECT Date, PeopleIn, PeopleOut, PeopleInside FROM "
+    		+ "1bEiHoWTB5Eo5iCMwNJCgf5g7swL4RFGENAt2bR0 WHERE Date > '"+format.format(now)+"' ORDER BY Date");
+
+    try {
+      Sqlresponse rep = sql.execute();
+      if(rep != null){
+          List<List<Object>> l = rep.getRows();
+          if(l!= null){
+        	  //get the last element
+	          Iterator it = l.get(l.size()-1).iterator();
+	          it.next(); // is the date
+	          int ii = Integer.parseInt(""+it.next()); // is PeopleIn 
+	          int oo = Integer.parseInt(""+it.next()); // is PeopleOut
+	          int inside = Integer.parseInt(""+it.next()); // is PeopleInside
+	          r.in = (short)ii;
+	          r.out = (short) oo;
+	          r.inside = inside;
+	          System.out.println(" Initializing global object from table - in - "+ii+" -- out -- "+oo+" -- inside -- "+inside);
+          }
+      }
+      
+      
+    } catch (IllegalArgumentException e) {
+      // For google-api-services-fusiontables-v1-rev1-1.7.2-beta this exception will always
+      // been thrown.
+      // Please see issue 545: JSON response could not be deserialized to Sqlresponse.class
+      // http://code.google.com/p/google-api-java-client/issues/detail?id=545
+    }
+    return r;
 }
 }

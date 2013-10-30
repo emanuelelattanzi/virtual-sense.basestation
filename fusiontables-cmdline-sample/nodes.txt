@@ -1,5 +1,5 @@
 2;562;549;Counter
-3;565;580;Counter#Noise#CO2
+3;565;580;Counter#Noise#CO2#Temp
 4;423;550;Counter#Noise#CO2
 5;360;580;Counter#Noise#CO2#Pressure#Temp#Light
 6;272;550;Counter#Pressure#Temp#Light
