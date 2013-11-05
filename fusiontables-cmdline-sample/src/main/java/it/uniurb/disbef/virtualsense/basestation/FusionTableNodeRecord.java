@@ -23,4 +23,25 @@ public class FusionTableNodeRecord {
   public FusionTableNodeRecord(short id){
 	  this.nodeID = id;
   }
+
+/**
+ * 
+ */
+public void print() {
+	System.out.println("\t\t nodeID: "+nodeID);
+	System.out.println("\t\t counter: "+counter);
+	System.out.println("\t\t nosie: "+noise);
+	System.out.println("\t\t noiseCounter: "+noiseCounter);
+	System.out.println("\t\t co2: "+co2);
+	System.out.println("\t\t co2Counter: "+co2Counter);
+	System.out.println("\t\t out: "+out);
+	System.out.println("\t\t in: "+in);
+	System.out.println("\t\t pressure: "+pressure);
+	System.out.println("\t\t pressureCounter: "+pressureCounter);
+	System.out.println("\t\t temperature: "+temperature);
+	System.out.println("\t\t temperatureCounter: "+temperatureCounter);
+	System.out.println("\t\t luminosity: "+luminosity);
+	System.out.println("\t\t luminosityCounter: "+luminosityCounter);
+	
+}
 }

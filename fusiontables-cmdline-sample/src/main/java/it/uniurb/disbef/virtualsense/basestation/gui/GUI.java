@@ -302,6 +302,7 @@ public class GUI extends JFrame {
 					 TextParser.parseText(tmp, myGui);
 				 lineNumber++;
 			}while(tmp != null);
+			System.out.println("Log file readed lines: "+lineNumber);
 			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block

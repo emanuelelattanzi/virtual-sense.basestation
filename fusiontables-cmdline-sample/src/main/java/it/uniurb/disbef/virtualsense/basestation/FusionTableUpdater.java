@@ -2,13 +2,11 @@
 
 package it.uniurb.disbef.virtualsense.basestation;
 
-import com.google.api.services.samples.fusiontables.cmdline.FusionTablesSample;
-
-import java.io.IOException;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.LinkedList;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -20,9 +18,11 @@ public class FusionTableUpdater extends Thread{
   private Hashtable<Short,LinkedList<Packet>> packetsOnFill = new Hashtable<Short,LinkedList<Packet>>(); 
   private Hashtable<Node,FusionTableNodeRecord> lastNodeRecords = new Hashtable<Node,FusionTableNodeRecord>(); 
   private FusionTableGlobalPeopleRecord globalRecord = new FusionTableGlobalPeopleRecord();
+  Semaphore sem = new Semaphore(0);
   
   private ReentrantLock lock = new ReentrantLock();
   int cycleCounter = 0;
+  int tempPCounter = 0;
 
   
   public FusionTableUpdater(){
@@ -36,18 +36,24 @@ public class FusionTableUpdater extends Thread{
 	  resetter.start();
 	  
     while(true){
-      if(cycleCounter == 0)
-		try {
+    	
+    	/* if(cycleCounter == 0)
+		/*LELE to test log try {
 			globalRecord = FusionTablesSample.initGlobalRecord(globalRecord);
 		} catch (IOException exception1) {
 			// TODO Auto-generated catch block
 			exception1.printStackTrace();
-		}
-      this.lock.lock();
+		}*/
+      
       try {
+    	  System.out.println("Waiting on sem");
+    	  sem.acquire();
+    	  this.lock.lock();
+    	  System.out.println("Sem released ");
     	  // switch packet buffer pointers
         this.packetsOnSend = this.packetsOnFill;
         this.packetsOnFill = new Hashtable<Short,LinkedList<Packet>>();
+        tempPCounter = 0;
         this.lock.unlock();
         
         // process nodesOnSend
@@ -61,13 +67,13 @@ public class FusionTableUpdater extends Thread{
           if(nr != null){
         	  this.lastNodeRecords.put(nn, nr);
         	  // save to the fusion table
-        	  try {
+        	  /* LELE to test log try {
                 	System.out.println("Inserting record for node "+nn.ID);
                 	FusionTablesSample.insertData(nr);          	
               } catch (IOException exception) {
                   // TODO Auto-generated catch block
                   exception.printStackTrace();
-              }
+              }*/
           }
         }// end for each node  
         Enumeration<Node>nodes = this.lastNodeRecords.keys();
@@ -76,12 +82,14 @@ public class FusionTableUpdater extends Thread{
 	        System.out.println("Calculating global values ...");
 	        while(nodes.hasMoreElements()){        	
 	        	Node n = nodes.nextElement();
-	        	System.out.println("Processing node "+n.ID);
 	        	FusionTableNodeRecord nodeRecord = this.lastNodeRecords.get(n);
-	        	globalRecord.in+=nodeRecord.in; // sum epoch deltas to global counters
-	        	globalRecord.out+=nodeRecord.out;
-	        	System.out.println("add to global record: "+nodeRecord.in);
-	        	System.out.println("add to global record: "+nodeRecord.out);
+	        	if(n.hasCapability("People")) {
+	        		System.out.println("Processing node "+n.ID);
+	        		globalRecord.in+=nodeRecord.in; // sum epoch deltas to global counters
+	        		globalRecord.out+=nodeRecord.out;
+	        		System.out.println("add to global record: "+nodeRecord.in);
+	        		System.out.println("add to global record: "+nodeRecord.out);
+	        	}
 	        }
 	        globalRecord.inside = globalRecord.in - globalRecord.out;      
 	        if(globalRecord.inside < 0){
@@ -91,16 +99,17 @@ public class FusionTableUpdater extends Thread{
 	        
 	                
 	        // save to the fusion table the global counter values 
-	        if(this.lastNodeRecords.size() > 0)
-	        	try {
+	        /*LELE to test log if(this.lastNodeRecords.size() > 0)
+	        	 try {
 	        		FusionTablesSample.insertDataToGlobalCounter(System.currentTimeMillis(), ""+globalRecord.in, ""+globalRecord.out, ""+globalRecord.inside);
 	        	} catch (IOException exception) {
 	        		// TODO Auto-generated catch block
 	        		exception.printStackTrace();
-	        	}  
+	        	}  */
         }
         cycleCounter++;
-        Thread.sleep(1000*60*5);
+        // LELE Thread.sleep(1000*60*5);
+        
       } catch (InterruptedException exception) {
         // TODO Auto-generated catch block
         exception.printStackTrace();
@@ -115,6 +124,15 @@ public class FusionTableUpdater extends Thread{
         this.packetsOnFill.put(p.sender, new LinkedList<Packet>());
       }    
       this.packetsOnFill.get(p.sender).add(p);
+      tempPCounter++;
+      //
+      if(tempPCounter >= 30){
+    	  sem.release();
+    	  System.out.println("-----------------"+tempPCounter);
+    	  tempPCounter = 0;
+    	  Thread.yield();
+    	  
+      }
     }finally {
       this.lock.unlock();
     }    
@@ -133,6 +151,7 @@ public class FusionTableUpdater extends Thread{
 	        // the node pointer
 	        Node nn = BaseStationLogger.nodes.get(nodeID);
 	        // for each packet 
+	        System.out.println("Process packets of node "+nodeID);
 	        for(int i = 0; i < packetsOfNode.size(); i++){
 	          Packet pa = packetsOfNode.get(i);
 	          if(nn.hasCapability("Counter"))
@@ -151,13 +170,16 @@ public class FusionTableUpdater extends Thread{
 	            if(nn.lastInValue > pa.in || nn.lastOutValue > pa.out){ // shut down has been detected 
 	            	deltaIn =  pa.in;
 	            	deltaOut = pa.out;
+	            	System.out.println("\tNode has been rebooted");
+	            	System.out.println("\tResetting delta to the packet value in: "+pa.in+" out:"+pa.out);
+	            	System.out.println("\tWas in: "+nn.lastInValue+" out:"+nn.lastOutValue);
 	            }else {
 	            	// calculate delta and sum it to the node record to obtain the epoch delta
 	            	deltaIn =  (pa.in - nn.lastInValue );
 	            	deltaOut = (pa.out - nn.lastOutValue);
-	            	System.out.println("Calculated delta in steady sistuation for nodeID "+nn.ID+" in "+
+	            	System.out.println("\tCalculated delta in steady sistuation for nodeID "+nn.ID+" in "+
 	            	deltaIn+" out "+deltaOut);
-	            	System.out.println("lastInValue : "+nn.lastInValue+" "
+	            	System.out.println("\tlastInValue : "+nn.lastInValue+" "
 	            					+  "lastOutValue: "+nn.lastOutValue+" "
 	            					+  "pa.in: "+pa.in+" pa.out: "+pa.out);
 	            }
@@ -165,7 +187,7 @@ public class FusionTableUpdater extends Thread{
             	nn.lastOutValue = pa.out;
 	            newNodeRecord.in += deltaIn;
 	            newNodeRecord.out += deltaOut;
-	            System.out.println("NewNodeRecord.in : "+newNodeRecord.in+" "
+	            System.out.println("\tNewNodeRecord.in : "+newNodeRecord.in+" "
     					+  "newNodeRecord.out"+newNodeRecord.out);
 	            
 	          }
@@ -184,6 +206,9 @@ public class FusionTableUpdater extends Thread{
 	        } // end for each packet 
 	        // control if some value has not been calculated due to spurious noise
 	        newNodeRecord = purgeNodeRecord(newNodeRecord, lastNodeRecord);
+	        System.out.println("\tFinal NodeRecord");
+	        newNodeRecord.print();
+	        System.out.println("\t ----- end node "+nodeID+" ------");
 	        // newNodeRecord is ready to be saved in the fusion table
         }// end is not empty
       return newNodeRecord;
