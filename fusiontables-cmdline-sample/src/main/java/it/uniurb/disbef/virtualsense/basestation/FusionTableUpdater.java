@@ -96,6 +96,8 @@ public class FusionTableUpdater extends Thread{
 	        	globalRecord.inside = 0;
 	        	globalRecord.out = globalRecord.in;
 	        }
+	        System.out.println("####   Global values inside: "+globalRecord.inside+
+	        		" in: "+globalRecord.in+" out: "+globalRecord.out); 
 	        
 	                
 	        // save to the fusion table the global counter values 
@@ -142,6 +144,7 @@ public class FusionTableUpdater extends Thread{
 	        // the node pointer
 	        Node nn = BaseStationLogger.nodes.get(nodeID);
 	        // for each packet 
+	        System.out.println("Process packets of node "+nodeID);
 	        for(int i = 0; i < packetsOfNode.size(); i++){
 	          Packet pa = packetsOfNode.get(i);
 	          if(nn.hasCapability("Counter"))
@@ -160,13 +163,16 @@ public class FusionTableUpdater extends Thread{
 	            if(nn.lastInValue > pa.in || nn.lastOutValue > pa.out){ // shut down has been detected 
 	            	deltaIn =  pa.in;
 	            	deltaOut = pa.out;
+	            	System.out.println("\tNode has been rebooted");
+	            	System.out.println("\tResetting delta to the packet value in: "+pa.in+" out:"+pa.out);
+	            	System.out.println("\tWas in: "+nn.lastInValue+" out:"+nn.lastOutValue);
 	            }else {
 	            	// calculate delta and sum it to the node record to obtain the epoch delta
 	            	deltaIn =  (pa.in - nn.lastInValue );
 	            	deltaOut = (pa.out - nn.lastOutValue);
-	            	System.out.println("Calculated delta in steady sistuation for nodeID "+nn.ID+" in "+
+	            	System.out.println("\tCalculated delta in steady sistuation for nodeID "+nn.ID+" in "+
 	            	deltaIn+" out "+deltaOut);
-	            	System.out.println("lastInValue : "+nn.lastInValue+" "
+	            	System.out.println("\tlastInValue : "+nn.lastInValue+" "
 	            					+  "lastOutValue: "+nn.lastOutValue+" "
 	            					+  "pa.in: "+pa.in+" pa.out: "+pa.out);
 	            }
@@ -174,8 +180,8 @@ public class FusionTableUpdater extends Thread{
             	nn.lastOutValue = pa.out;
 	            newNodeRecord.in += deltaIn;
 	            newNodeRecord.out += deltaOut;
-	            System.out.println("NewNodeRecord.in : "+newNodeRecord.in+" "
-    					+  "newNodeRecord.out"+newNodeRecord.out);
+	            System.out.println("\tNewNodeRecord.in : "+newNodeRecord.in+"\n"
+    					+  "newNodeRecord.out "+newNodeRecord.out);
 	            
 	          }
 	          if(nn.hasCapability("Pressure")  && (pa.pressure < 1400) && (pa.pressure > 700)){
@@ -193,10 +199,14 @@ public class FusionTableUpdater extends Thread{
 	        } // end for each packet 
 	        // control if some value has not been calculated due to spurious noise
 	        newNodeRecord = purgeNodeRecord(newNodeRecord, lastNodeRecord);
+	        System.out.println("\tFinal NodeRecord");
+	        if(nn.hasCapability("People"))
+	        	newNodeRecord.print();
+	        System.out.println("\t ----- end node "+nodeID+" ------");
 	        // newNodeRecord is ready to be saved in the fusion table
         }// end is not empty
       return newNodeRecord;
-  }
+ }
   
   private FusionTableNodeRecord purgeNodeRecord(
 			FusionTableNodeRecord newNodeRecord,
