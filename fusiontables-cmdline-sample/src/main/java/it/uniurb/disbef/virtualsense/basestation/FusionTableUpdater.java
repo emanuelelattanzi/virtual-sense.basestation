@@ -68,7 +68,10 @@ public class FusionTableUpdater extends Thread{
                   // TODO Auto-generated catch block
                   exception.printStackTrace();
               }
+          }else {
+        	  this.lastNodeRecords.put(nn,new FusionTableNodeRecord(nn.ID)); //to reset record if no packet have been received
           }
+
         }// end for each node  
         Enumeration<Node>nodes = this.lastNodeRecords.keys();
         // for each node
@@ -78,10 +81,15 @@ public class FusionTableUpdater extends Thread{
 	        	Node n = nodes.nextElement();
 	        	System.out.println("Processing node "+n.ID);
 	        	FusionTableNodeRecord nodeRecord = this.lastNodeRecords.get(n);
-	        	globalRecord.in+=nodeRecord.in; // sum epoch deltas to global counters
-	        	globalRecord.out+=nodeRecord.out;
-	        	System.out.println("add to global record: "+nodeRecord.in);
-	        	System.out.println("add to global record: "+nodeRecord.out);
+	        	if(n.hasCapability("People") && nodeRecord.checked) {
+	        		System.out.println("Processing node "+n.ID);
+	        		globalRecord.in+=nodeRecord.in; // sum epoch deltas to global counters
+	        		globalRecord.out+=nodeRecord.out;
+	        		System.out.println("add to global record: "+nodeRecord.in);
+	        		System.out.println("add to global record: "+nodeRecord.out);
+	        		nodeRecord.checked = false;
+	        	}
+
 	        }
 	        globalRecord.inside = globalRecord.in - globalRecord.out;      
 	        if(globalRecord.inside < 0){
@@ -128,6 +136,7 @@ public class FusionTableUpdater extends Thread{
         // make average on this packet and send to the fusion table
         if(!packetsOfNode.isEmpty()){            
 	        newNodeRecord = new FusionTableNodeRecord(nodeID);   
+	        newNodeRecord.checked = true;
 	        lastNodeRecord = this.lastNodeRecords.get(nodeID);
 	        // lastNodeRecord is null if not present
 	        // the node pointer
