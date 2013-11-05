@@ -19,6 +19,7 @@ public class FusionTableUpdater extends Thread{
   private Hashtable<Node,FusionTableNodeRecord> lastNodeRecords = new Hashtable<Node,FusionTableNodeRecord>(); 
   private FusionTableGlobalPeopleRecord globalRecord = new FusionTableGlobalPeopleRecord();
   Semaphore sem = new Semaphore(0);
+  public static Semaphore sem2 = new Semaphore(0);
   
   private ReentrantLock lock = new ReentrantLock();
   int cycleCounter = 0;
@@ -44,6 +45,8 @@ public class FusionTableUpdater extends Thread{
 			// TODO Auto-generated catch block
 			exception1.printStackTrace();
 		}*/
+    	
+    	
       
       try {
     	  System.out.println("Waiting on sem");
@@ -65,7 +68,7 @@ public class FusionTableUpdater extends Thread{
           LinkedList<Packet> p = this.packetsOnSend.get(nodeID);
           FusionTableNodeRecord nr = processPacketList(p,nodeID);
           if(nr != null){
-        	  this.lastNodeRecords.put(nn, nr);
+        	  this.lastNodeRecords.put(nn, nr);        	 
         	  // save to the fusion table
         	  /* LELE to test log try {
                 	System.out.println("Inserting record for node "+nn.ID);
@@ -74,6 +77,8 @@ public class FusionTableUpdater extends Thread{
                   // TODO Auto-generated catch block
                   exception.printStackTrace();
               }*/
+          }else {
+        	  this.lastNodeRecords.put(nn,new FusionTableNodeRecord(nn.ID)); //to reset record if no packet have been received
           }
         }// end for each node  
         Enumeration<Node>nodes = this.lastNodeRecords.keys();
@@ -83,12 +88,13 @@ public class FusionTableUpdater extends Thread{
 	        while(nodes.hasMoreElements()){        	
 	        	Node n = nodes.nextElement();
 	        	FusionTableNodeRecord nodeRecord = this.lastNodeRecords.get(n);
-	        	if(n.hasCapability("People")) {
+	        	if(n.hasCapability("People") && nodeRecord.checked) {
 	        		System.out.println("Processing node "+n.ID);
 	        		globalRecord.in+=nodeRecord.in; // sum epoch deltas to global counters
 	        		globalRecord.out+=nodeRecord.out;
 	        		System.out.println("add to global record: "+nodeRecord.in);
 	        		System.out.println("add to global record: "+nodeRecord.out);
+	        		nodeRecord.checked = false;
 	        	}
 	        }
 	        globalRecord.inside = globalRecord.in - globalRecord.out;      
@@ -97,7 +103,8 @@ public class FusionTableUpdater extends Thread{
 	        	globalRecord.out = globalRecord.in;
 	        }
 	        
-	                
+	        System.out.println("####   Global values inside: "+globalRecord.inside+
+	        		" in: "+globalRecord.in+" out: "+globalRecord.out);        
 	        // save to the fusion table the global counter values 
 	        /*LELE to test log if(this.lastNodeRecords.size() > 0)
 	        	 try {
@@ -109,6 +116,7 @@ public class FusionTableUpdater extends Thread{
         }
         cycleCounter++;
         // LELE Thread.sleep(1000*60*5);
+        sem2.release();
         
       } catch (InterruptedException exception) {
         // TODO Auto-generated catch block
@@ -126,14 +134,19 @@ public class FusionTableUpdater extends Thread{
       this.packetsOnFill.get(p.sender).add(p);
       tempPCounter++;
       //
-      if(tempPCounter >= 30){
+      if(tempPCounter >= 10){
     	  sem.release();
     	  System.out.println("-----------------"+tempPCounter);
     	  tempPCounter = 0;
-    	  Thread.yield();
+    	  this.lock.unlock();
+    	  sem2.acquire();
+    	  this.lock.lock();
     	  
       }
-    }finally {
+    } catch (InterruptedException exception) {
+		// TODO Auto-generated catch block
+		exception.printStackTrace();
+	}finally {
       this.lock.unlock();
     }    
   }
@@ -146,6 +159,7 @@ public class FusionTableUpdater extends Thread{
         // make average on this packet and send to the fusion table
         if(!packetsOfNode.isEmpty()){            
 	        newNodeRecord = new FusionTableNodeRecord(nodeID);   
+	        newNodeRecord.checked = true;
 	        lastNodeRecord = this.lastNodeRecords.get(nodeID);
 	        // lastNodeRecord is null if not present
 	        // the node pointer
@@ -187,8 +201,8 @@ public class FusionTableUpdater extends Thread{
             	nn.lastOutValue = pa.out;
 	            newNodeRecord.in += deltaIn;
 	            newNodeRecord.out += deltaOut;
-	            System.out.println("\tNewNodeRecord.in : "+newNodeRecord.in+" "
-    					+  "newNodeRecord.out"+newNodeRecord.out);
+	            System.out.println("\tNewNodeRecord.in : "+newNodeRecord.in+"\n"
+    					+  "newNodeRecord.out "+newNodeRecord.out);
 	            
 	          }
 	          if(nn.hasCapability("Pressure")  && (pa.pressure < 1400) && (pa.pressure > 700)){
@@ -207,7 +221,8 @@ public class FusionTableUpdater extends Thread{
 	        // control if some value has not been calculated due to spurious noise
 	        newNodeRecord = purgeNodeRecord(newNodeRecord, lastNodeRecord);
 	        System.out.println("\tFinal NodeRecord");
-	        newNodeRecord.print();
+	        if(nn.hasCapability("People"))
+	        	newNodeRecord.print();
 	        System.out.println("\t ----- end node "+nodeID+" ------");
 	        // newNodeRecord is ready to be saved in the fusion table
         }// end is not empty

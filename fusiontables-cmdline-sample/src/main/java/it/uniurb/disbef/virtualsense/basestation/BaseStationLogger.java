@@ -28,6 +28,7 @@ public class BaseStationLogger {
 	private static FusionTableUpdater myUpdater;
 	
 	
+	
 	public static void newPacket(Packet p){
 		packets.add(p);
 		//create a new node if needed (i.e. the sender, or routeIndexes are not known here)

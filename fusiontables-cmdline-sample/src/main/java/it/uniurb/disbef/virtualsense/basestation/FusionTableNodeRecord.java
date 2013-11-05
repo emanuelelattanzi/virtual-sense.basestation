@@ -19,6 +19,7 @@ public class FusionTableNodeRecord {
   public int temperatureCounter;
   public double luminosity;
   public int luminosityCounter;
+  public boolean checked;
   
   public FusionTableNodeRecord(short id){
 	  this.nodeID = id;
