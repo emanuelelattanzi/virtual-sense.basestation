@@ -67,6 +67,9 @@ public class FusionTablesSample {
   private static final JsonFactory JSON_FACTORY = new JacksonFactory();
 
   private static Fusiontables fusiontables;
+  
+  private static double powerAvgWindows[] = new double[6];
+  private static int powerAvgIndex = 0;
 
   /** Authorizes the installed application to access user's protected data. */
   private static Credential authorize() throws Exception {
@@ -206,12 +209,12 @@ public class FusionTablesSample {
   }
   
   /** Inserts a row in the newly created table for the authenticated user. */
-  public static void insertDataToGlobalCounter(long time, 
+  public static void insertDataToGlobalCounter(Date time, 
                                  String peopleIn, String peopleOut, 
                                  String peopleInside) throws IOException {
-    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     Sql sql = fusiontables.query().sql("INSERT INTO 1bEiHoWTB5Eo5iCMwNJCgf5g7swL4RFGENAt2bR0 (PeopleIn,PeopleOut,PeopleInside,Date)"
-        + " VALUES (" + "'"+peopleIn+"', '"+peopleOut+"','"+peopleInside+"', '" + format.format(new Date(time)) + "')");
+        + " VALUES (" + "'"+peopleIn+"', '"+peopleOut+"','"+peopleInside+"', '" + format.format(time) + "')");
     
     System.out.println(sql.toString());
 
@@ -236,23 +239,51 @@ public class FusionTablesSample {
 /**
  * @param nr
  */
-public static void insertData(FusionTableNodeRecord nr) throws IOException{
+public static void insertData(FusionTableNodeRecord nr, Date d) throws IOException{
 	java.text.DecimalFormat format = new java.text.DecimalFormat("0.00");
-	
-    Table toUpdate = BaseStationLogger.findTableByNodeID(nr.nodeID);    
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    Sql sql = fusiontables.query().sql("INSERT INTO " + toUpdate.getTableId() + 
-    		" (Noise,CO2,Temperature,Pressure,Light, PeopleOut, PeopleIn, Counter,Date)"
-        + " VALUES (" + "'"+format.format(nr.noise)+"', '"+format.format(nr.co2)+"','"+
-    		format.format(nr.temperature)+"', '"+format.format(nr.pressure)+"','"+
-            format.format(nr.luminosity)+"','"+format.format(nr.out)+"','"+
-            format.format(nr.in)+"','"+format.format(nr.counter)+"'"
-        + ",'" + dateFormat.format(new Date(System.currentTimeMillis())) + "')");
+	if(nr.nodeID != 13){
+		Table toUpdate = BaseStationLogger.findTableByNodeID(nr.nodeID);    
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+		Sql sql = fusiontables.query().sql("INSERT INTO " + toUpdate.getTableId() + 
+				" (Noise,CO2,Temperature,Pressure,Light, PeopleOut, PeopleIn, Counter,Date)"
+				+ " VALUES (" + "'"+format.format(nr.noise)+"', '"+format.format(nr.co2)+"','"+
+				format.format(nr.temperature)+"', '"+format.format(nr.pressure)+"','"+
+				format.format(nr.luminosity)+"','"+format.format(nr.out)+"','"+
+				format.format(nr.in)+"','"+format.format(nr.counter)+"'"
+				+ ",'" + dateFormat.format(d) + "')");
     
     System.out.println(sql.toString());
+    sql.execute();
+    
+	}else {
+		//
+		powerAvgWindows[powerAvgIndex] = nr.temperature;
+		powerAvgIndex = (powerAvgIndex + 1)%6;
+		nr.co2 = 0;
+		int notZero = 0;
+		for(int i = 0; i < powerAvgWindows.length; i++){
+			nr.co2 +=powerAvgWindows[i];
+			if(powerAvgWindows[i] != 0)
+				notZero++;
+		}
+		nr.co2/=notZero;
+		
+		Table toUpdate = BaseStationLogger.findTableByNodeID(nr.nodeID);    
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Sql sql = fusiontables.query().sql("INSERT INTO " + toUpdate.getTableId() + 
+				" (Noise,CO2,Temperature,Pressure,Light, PeopleOut, PeopleIn, Counter,Date)"
+				+ " VALUES (" + "'"+format.format(nr.noise)+"', '"+format.format(nr.co2)+"','"+
+				format.format(nr.temperature)+"', '"+format.format(nr.pressure)+"','"+
+				format.format(nr.luminosity)+"','"+format.format(nr.out)+"','"+
+				format.format(nr.in)+"','"+format.format(nr.counter)+"'"
+				+ ",'" + dateFormat.format(new Date(System.currentTimeMillis())) + "')");
+    
+    System.out.println(sql.toString());
+    sql.execute();
+	}
 
     
-    sql.execute();
+    
 }
 
 public static FusionTableGlobalPeopleRecord initGlobalRecord(FusionTableGlobalPeopleRecord r) throws IOException{

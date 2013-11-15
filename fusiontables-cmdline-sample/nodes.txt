@@ -9,3 +9,4 @@
 10;607;514;Counter#People
 11;410;573;Counter#People
 12;256;152;Counter#People
+13;260;530;Counter#Temp#CO2

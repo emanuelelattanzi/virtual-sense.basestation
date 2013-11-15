@@ -27,6 +27,9 @@ public class BaseStationLogger {
 	private static TableList listOfTables = null; 
 	private static FusionTableUpdater myUpdater;
 	
+	public static void resetStats(){
+		packets = new LinkedList<Packet>(); 
+	}
 	
 	public static void newPacket(Packet p){
 		packets.add(p);

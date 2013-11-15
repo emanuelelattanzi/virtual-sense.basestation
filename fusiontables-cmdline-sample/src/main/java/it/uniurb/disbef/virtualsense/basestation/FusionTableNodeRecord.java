@@ -12,7 +12,9 @@ public class FusionTableNodeRecord {
   public double co2;
   public int co2Counter;
   public short out;
-  public short in;    
+  public short in; 
+  public short deltaOut;
+  public short deltaIn; 
   public double pressure;
   public int pressureCounter;
   public double temperature;
@@ -33,6 +35,8 @@ public class FusionTableNodeRecord {
 		System.out.println("\t\t co2Counter: "+co2Counter);
 		System.out.println("\t\t out: "+out);
 		System.out.println("\t\t in: "+in);
+		System.out.println("\t\t deltaOut: "+deltaOut);
+		System.out.println("\t\t deltaIn: "+deltaIn);
 		System.out.println("\t\t pressure: "+pressure);
 		System.out.println("\t\t pressureCounter: "+pressureCounter);
 		System.out.println("\t\t temperature: "+temperature);

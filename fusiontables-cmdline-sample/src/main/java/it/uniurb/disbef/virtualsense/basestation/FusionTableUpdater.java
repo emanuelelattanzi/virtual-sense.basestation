@@ -31,11 +31,13 @@ public class FusionTableUpdater extends Thread{
   
   @Override
   public void run(){
+	  Date updateTime;
 	  // start resetter thread
 	  CounterResetter resetter = new CounterResetter();
 	  resetter.start();
 	  
     while(true){
+      updateTime = new Date();
       if(cycleCounter == 0)
 		try {
 			globalRecord = FusionTablesSample.initGlobalRecord(globalRecord);
@@ -63,7 +65,7 @@ public class FusionTableUpdater extends Thread{
         	  // save to the fusion table
         	  try {
                 	System.out.println("Inserting record for node "+nn.ID);
-                	FusionTablesSample.insertData(nr);          	
+                	FusionTablesSample.insertData(nr,updateTime);          	
               } catch (IOException exception) {
                   // TODO Auto-generated catch block
                   exception.printStackTrace();
@@ -83,10 +85,10 @@ public class FusionTableUpdater extends Thread{
 	        	FusionTableNodeRecord nodeRecord = this.lastNodeRecords.get(n);
 	        	if(n.hasCapability("People") && nodeRecord.checked) {
 	        		System.out.println("Processing node "+n.ID);
-	        		globalRecord.in+=nodeRecord.in; // sum epoch deltas to global counters
-	        		globalRecord.out+=nodeRecord.out;
-	        		System.out.println("add to global record: "+nodeRecord.in);
-	        		System.out.println("add to global record: "+nodeRecord.out);
+	        		globalRecord.in+=nodeRecord.deltaIn; // sum epoch deltas to global counters
+	        		globalRecord.out+=nodeRecord.deltaOut;
+	        		System.out.println("add to global record: "+nodeRecord.deltaIn);
+	        		System.out.println("add to global record: "+nodeRecord.deltaOut);
 	        		nodeRecord.checked = false;
 	        	}
 
@@ -103,7 +105,7 @@ public class FusionTableUpdater extends Thread{
 	        // save to the fusion table the global counter values 
 	        if(this.lastNodeRecords.size() > 0)
 	        	try {
-	        		FusionTablesSample.insertDataToGlobalCounter(System.currentTimeMillis(), ""+globalRecord.in, ""+globalRecord.out, ""+globalRecord.inside);
+	        		FusionTablesSample.insertDataToGlobalCounter(updateTime, ""+globalRecord.in, ""+globalRecord.out, ""+globalRecord.inside);
 	        	} catch (IOException exception) {
 	        		// TODO Auto-generated catch block
 	        		exception.printStackTrace();
@@ -139,7 +141,7 @@ public class FusionTableUpdater extends Thread{
         if(!packetsOfNode.isEmpty()){            
 	        newNodeRecord = new FusionTableNodeRecord(nodeID);   
 	        newNodeRecord.checked = true;
-	        lastNodeRecord = this.lastNodeRecords.get(nodeID);
+	        lastNodeRecord = this.lastNodeRecords.get(BaseStationLogger.nodes.get(nodeID));
 	        // lastNodeRecord is null if not present
 	        // the node pointer
 	        Node nn = BaseStationLogger.nodes.get(nodeID);
@@ -178,30 +180,50 @@ public class FusionTableUpdater extends Thread{
 	            }
 	            nn.lastInValue = pa.in;
             	nn.lastOutValue = pa.out;
-	            newNodeRecord.in += deltaIn;
-	            newNodeRecord.out += deltaOut;
-	            System.out.println("\tNewNodeRecord.in : "+newNodeRecord.in+"\n"
-    					+  "newNodeRecord.out "+newNodeRecord.out);
-	            
+	            newNodeRecord.deltaIn += deltaIn;
+	            newNodeRecord.deltaOut += deltaOut;	            
+	           
 	          }
 	          if(nn.hasCapability("Pressure")  && (pa.pressure < 1400) && (pa.pressure > 700)){
 	            newNodeRecord.pressure += pa.pressure;
 	            newNodeRecord.pressureCounter++;
 	          }
 	          if(nn.hasCapability("Temp") &&(pa.temperature < 10000)  &&(pa.temperature > 0)){
-	            newNodeRecord.temperature += (((double)pa.temperature/100));
-	            newNodeRecord.temperatureCounter++;
+	        	if(nn.ID != 13){
+	        		newNodeRecord.temperature += (((double)pa.temperature/100));
+	        		newNodeRecord.temperatureCounter++;
+	        	}else {
+	        		double power = (double)pa.temperature;
+	        		power = (1.0/(185.0/(power/Math.sqrt(2))))*220;
+	        		newNodeRecord.temperature += power;
+	        		newNodeRecord.temperatureCounter++;
+	        	}
 	          }
-	          if(nn.hasCapability("Light") && (pa.luminosity > 15)){
+	          if(nn.hasCapability("Light") && (pa.luminosity > 0)){
 	            newNodeRecord.luminosity += pa.luminosity;
 	            newNodeRecord.luminosityCounter++;
 	          }            
 	        } // end for each packet 
+	     // to save the summary of the day
+            if(lastNodeRecord != null){
+            	System.out.println("\tlastNodeRecord.in : "+lastNodeRecord.in+"\n"
+     					+  "\tlastNodeRecord.out "+lastNodeRecord.out);
+ 	            
+            	newNodeRecord.in = (short)(newNodeRecord.deltaIn+lastNodeRecord.in);
+            	newNodeRecord.out = (short)(newNodeRecord.deltaOut+lastNodeRecord.out);
+            }else {
+            	System.out.println("\tlastNodeRecord is NULL");
+            	
+            	newNodeRecord.in = (short)(newNodeRecord.deltaIn);
+            	newNodeRecord.out = (short)(newNodeRecord.deltaOut);
+            }
+            System.out.println("\tNewNodeRecord.in : "+newNodeRecord.in+"\n"
+					+  "\tnewNodeRecord.out "+newNodeRecord.out);
 	        // control if some value has not been calculated due to spurious noise
 	        newNodeRecord = purgeNodeRecord(newNodeRecord, lastNodeRecord);
 	        System.out.println("\tFinal NodeRecord");
-	        if(nn.hasCapability("People"))
-	        	newNodeRecord.print();
+	        
+	        newNodeRecord.print();
 	        System.out.println("\t ----- end node "+nodeID+" ------");
 	        // newNodeRecord is ready to be saved in the fusion table
         }// end is not empty
@@ -253,6 +275,8 @@ public class FusionTableUpdater extends Thread{
 					System.out.println("Resetting globalRecord at "+now);
 					System.out.println("in was: "+globalRecord.in+" and out was: "+globalRecord.out);
 					globalRecord = new FusionTableGlobalPeopleRecord();
+					lastNodeRecords = new Hashtable<Node, FusionTableNodeRecord>();//resetting old stats
+					BaseStationLogger.resetStats();
 				}
 				lastCheck = now;
 				Thread.sleep(1000*60*10);
